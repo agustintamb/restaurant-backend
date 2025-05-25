@@ -7,9 +7,17 @@ import {
   getUsersService,
 } from '../services/user.service';
 
-export const createUser = async (req: Request, res: Response) => {
+interface AuthenticatedRequest extends Request {
+  user?: {
+    id: string;
+    username: string;
+  };
+}
+
+export const createUser = async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const user = await createUserService(req.body);
+    const createdBy = req.user?.id;
+    const user = await createUserService(req.body, createdBy);
     res.status(201).json(user);
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Ha ocurrido un error';
@@ -17,9 +25,10 @@ export const createUser = async (req: Request, res: Response) => {
   }
 };
 
-export const updateUser = async (req: Request, res: Response) => {
+export const updateUser = async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const user = await updateUserService(req.params.id, req.body);
+    const updatedBy = req.user?.id;
+    const user = await updateUserService(req.params.id, req.body, updatedBy);
     res.json(user);
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Ha ocurrido un error';
@@ -27,10 +36,14 @@ export const updateUser = async (req: Request, res: Response) => {
   }
 };
 
-export const deleteUser = async (req: Request, res: Response) => {
+export const deleteUser = async (req: AuthenticatedRequest, res: Response) => {
   try {
-    await deleteUserService(req.params.id);
-    res.status(204).send();
+    const deletedBy = req.user?.id;
+    const user = await deleteUserService(req.params.id, deletedBy);
+    res.json({
+      message: 'Usuario eliminado correctamente',
+      user: user,
+    });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Ha ocurrido un error';
     res.status(400).json({ error: message });

@@ -7,10 +7,12 @@ export interface UserCreateRequest {
 export interface UserUpdateRequest {
   username?: string;
   password?: string;
+  isActive?: boolean;
+  role?: 'admin';
 }
 
 export interface UserQuery {
   search?: string;
-  page?: number;
-  limit?: number;
+  page?: string | number;
+  limit?: string | number;
 }
