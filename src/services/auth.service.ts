@@ -8,15 +8,13 @@ export const loginService = async (loginData: LoginRequest) => {
 
   // Buscar usuario
   const user = await User.findOne({ username });
-  if (!user) {
-    throw new Error('Credenciales inválidas');
-  }
+  if (!user) throw new Error('Usuario incorrecto');
+
+  if (!user.isActive) throw new Error('Usuario deshabilitado');
 
   // Verificar contraseña
   const isPasswordValid = await user.comparePassword(password);
-  if (!isPasswordValid) {
-    throw new Error('Credenciales inválidas');
-  }
+  if (!isPasswordValid) throw new Error('Contraseña incorrecta');
 
   // Generar token
   const token = jwt.sign(

@@ -33,6 +33,11 @@ export const authenticateToken = async (
       return;
     }
 
+    if (!user.isActive) {
+      res.status(403).json({ error: 'Usuario deshabilitado' });
+      return;
+    }
+
     req.user = {
       id: String(user._id),
       username: user.username,
