@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import { AuthenticatedRequest } from '../types/auth.types';
 import {
   createUserService,
   updateUserService,
@@ -6,13 +7,6 @@ import {
   getUserByIdService,
   getUsersService,
 } from '../services/user.service';
-
-interface AuthenticatedRequest extends Request {
-  user?: {
-    id: string;
-    username: string;
-  };
-}
 
 export const createUser = async (req: AuthenticatedRequest, res: Response) => {
   try {

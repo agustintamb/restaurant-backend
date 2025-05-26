@@ -1,3 +1,5 @@
+import { Request } from 'express';
+
 export interface LoginRequest {
   username: string;
   password: string;
@@ -9,5 +11,12 @@ export interface LoginResponse {
     id: string;
     username: string;
     role: string;
+  };
+}
+
+export interface AuthenticatedRequest extends Request {
+  user?: {
+    id: string;
+    username: string;
   };
 }

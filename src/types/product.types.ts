@@ -18,6 +18,7 @@ export interface ProductUpdateRequest {
   alergenos?: string[];
   precio?: number;
   img?: string;
+  isActive?: boolean; // Permitir reactivar productos
 }
 
 export interface ProductQuery {
@@ -26,4 +27,5 @@ export interface ProductQuery {
   search?: string;
   page?: number;
   limit?: number;
+  includeInactive?: boolean; // Para incluir productos inactivos
 }

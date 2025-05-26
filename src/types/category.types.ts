@@ -6,4 +6,10 @@ export interface CategoryCreateRequest {
 export interface CategoryUpdateRequest {
   name?: string;
   subcategories?: Array<{ name: string }>;
+  isActive?: boolean;
+}
+
+export interface CategoryQuery {
+  search?: string;
+  includeInactive?: boolean;
 }

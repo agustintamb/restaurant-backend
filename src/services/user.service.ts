@@ -113,7 +113,7 @@ export const getUserByIdService = async (id: string) => {
 export const getUsersService = async (query: UserQuery) => {
   const { search, page, limit } = query;
 
-  // Construir filtros - por defecto solo usuarios activos (isActive: false es soft delete)
+  // Por default solo usuarios activos
   let filters: any = {};
   filters.isActive = true;
 

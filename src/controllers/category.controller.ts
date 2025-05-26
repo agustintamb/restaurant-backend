@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import { AuthenticatedRequest } from '../types/auth.types';
 import {
   createCategoryService,
   updateCategoryService,
@@ -7,9 +8,10 @@ import {
   getCategoriesService,
 } from '../services/category.service';
 
-export const createCategory = async (req: Request, res: Response) => {
+export const createCategory = async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const category = await createCategoryService(req.body);
+    const createdBy = req.user?.id;
+    const category = await createCategoryService(req.body, createdBy);
     res.status(201).json(category);
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Ha ocurrido un error';
@@ -17,9 +19,10 @@ export const createCategory = async (req: Request, res: Response) => {
   }
 };
 
-export const updateCategory = async (req: Request, res: Response) => {
+export const updateCategory = async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const category = await updateCategoryService(req.params.id, req.body);
+    const updatedBy = req.user?.id;
+    const category = await updateCategoryService(req.params.id, req.body, updatedBy);
     res.json(category);
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Ha ocurrido un error';
@@ -27,10 +30,14 @@ export const updateCategory = async (req: Request, res: Response) => {
   }
 };
 
-export const deleteCategory = async (req: Request, res: Response) => {
+export const deleteCategory = async (req: AuthenticatedRequest, res: Response) => {
   try {
-    await deleteCategoryService(req.params.id);
-    res.status(204).send();
+    const deletedBy = req.user?.id;
+    const category = await deleteCategoryService(req.params.id, deletedBy);
+    res.json({
+      message: 'Categoría eliminada correctamente',
+      category: category,
+    });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Ha ocurrido un error';
     res.status(400).json({ error: message });
@@ -49,7 +56,7 @@ export const getCategoryById = async (req: Request, res: Response) => {
 
 export const getCategories = async (req: Request, res: Response) => {
   try {
-    const categories = await getCategoriesService();
+    const categories = await getCategoriesService(req.query);
     res.json(categories);
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Ha ocurrido un error';
