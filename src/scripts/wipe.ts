@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 import readline from 'readline';
 import { CONFIG } from '@/config/env.config';
+import { User } from '@/models/User.model';
 
 // Crear interfaz para input del usuario
 const rl = readline.createInterface({
@@ -49,12 +50,11 @@ const analyzeDatabaseState = async (): Promise<any[]> => {
 
   if (collections.length === 0) {
     console.log('✨ Base de datos ya está completamente vacía');
-    rl.close();
-    process.exit(0);
+    // No salir aquí, continuar para crear el usuario admin
+  } else {
+    console.log(`🗑️  Encontradas ${collections.length} colecciones:`);
+    collections.forEach(col => console.log(`   - ${col.name}`));
   }
-
-  console.log(`🗑️  Encontradas ${collections.length} colecciones:`);
-  collections.forEach(col => console.log(`   - ${col.name}`));
 
   return collections;
 };
@@ -79,6 +79,11 @@ const requestUserConfirmation = async (): Promise<void> => {
  * Ejecutar limpieza completa de la base de datos
  */
 const executeCompleteWipe = async (collections: any[]): Promise<void> => {
+  if (collections.length === 0) {
+    console.log('✅ Base de datos ya está vacía');
+    return;
+  }
+
   console.log('\n🚀 Procediendo con la limpieza...');
 
   try {
@@ -107,6 +112,34 @@ const cleanCollectionsIndividually = async (collections: any[]): Promise<void> =
 };
 
 /**
+ * Crear usuario administrador por defecto
+ */
+const createAdminUser = async (): Promise<void> => {
+  console.log('\n👤 Creando usuario administrador...');
+
+  try {
+    const adminUser = new User({
+      username: 'admin@mail.com',
+      password: 'admin123',
+      firstName: 'Usuario',
+      lastName: 'Administrador',
+      phone: '1123456789',
+      role: 'admin',
+    });
+
+    await adminUser.save();
+    console.log('✅ Usuario administrador creado exitosamente');
+    console.log('   📧 Email: admin@mail.com');
+    console.log('   🔐 Password: admin123');
+    console.log('   👤 Nombre: Usuario Administrador');
+    console.log('   📱 Teléfono: 1123456789');
+  } catch (error) {
+    console.error('❌ Error creando usuario administrador:', error);
+    throw error;
+  }
+};
+
+/**
  * Verificar el resultado de la limpieza
  */
 const verifyCleanupResult = async (): Promise<void> => {
@@ -115,11 +148,13 @@ const verifyCleanupResult = async (): Promise<void> => {
   console.log('');
   console.log('💀 ¡LIMPIEZA TOTAL COMPLETADA!');
 
-  if (remainingCollections.length === 0) {
-    console.log('✅ Base de datos completamente vacía - Como nueva instalación');
-    console.log('🔄 Puedes ejecutar npm run db:simpleSeed para crear datos de prueba');
+  if (remainingCollections.length <= 1) {
+    // <= 1 porque ahora tenemos la colección de users
+    console.log('✅ Base de datos reiniciada correctamente');
+    console.log('👤 Usuario administrador listo para usar');
+    console.log('🔄 Base de datos preparada para desarrollo');
   } else {
-    console.log(`⚠️  ${remainingCollections.length} colecciones no pudieron eliminarse`);
+    console.log(`⚠️  ${remainingCollections.length} colecciones encontradas:`);
     remainingCollections.forEach(col => console.log(`   - ${col.name}`));
   }
 };
@@ -146,17 +181,22 @@ const wipe = async (): Promise<void> => {
     // 3. Analizar estado actual
     const collections = await analyzeDatabaseState();
 
-    // 4. Solicitar confirmación
-    await requestUserConfirmation();
+    // 4. Solicitar confirmación (solo si hay colecciones)
+    if (collections.length > 0) {
+      await requestUserConfirmation();
+    }
 
     // 5. Ejecutar limpieza
     await executeCompleteWipe(collections);
 
-    // 6. Verificar resultado
+    // 6. Crear usuario administrador
+    await createAdminUser();
+
+    // 7. Verificar resultado
     await verifyCleanupResult();
   } catch (error) {
     console.error('❌ Error durante la limpieza total:', error);
-    rl.close();
+    if (rl) rl.close();
     process.exit(1);
   } finally {
     await cleanup();

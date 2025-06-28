@@ -24,6 +24,7 @@ export const CONFIG = {
   corsAllowedOrigins: [
     process.env.FRONTEND_URL || 'http://localhost:5173',
     process.env.BACKOFFICE_URL || 'http://localhost:5174',
+    //'http://localhost:8000', // Para pruebas locales
   ],
 };
 
