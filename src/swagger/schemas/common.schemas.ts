@@ -15,7 +15,7 @@ export const commonSchemas = {
       message: {
         type: 'string',
         description: 'Mensaje de éxito',
-        example: 'Operación completada exitosamente',
+        example: 'Usuario eliminado exitosamente',
       },
     },
   },

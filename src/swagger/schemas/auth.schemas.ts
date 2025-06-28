@@ -29,24 +29,32 @@ export const authSchemas = {
           id: {
             type: 'string',
             description: 'ID del usuario',
+            example: '60d0fe4f5311236168a109ca',
           },
           username: {
             type: 'string',
-            description: 'Nombre de usuario',
-          },
-          firstName: {
-            type: 'string',
-            description: 'Nombre del usuario',
-          },
-          lastName: {
-            type: 'string',
-            description: 'Apellido del usuario',
+            description: 'Nombre de usuario (email)',
+            example: 'admin@mail.com',
           },
           role: {
             type: 'string',
             description: 'Rol del usuario',
+            example: 'admin',
           },
         },
+      },
+    },
+  },
+  LoginResponseWrapper: {
+    type: 'object',
+    properties: {
+      message: {
+        type: 'string',
+        description: 'Mensaje de éxito',
+        example: 'Inicio de sesión exitoso',
+      },
+      result: {
+        $ref: '#/components/schemas/LoginResponse',
       },
     },
   },

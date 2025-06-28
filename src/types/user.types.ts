@@ -37,6 +37,13 @@ export interface UpdateUserDto {
   modifiedBy?: string;
 }
 
+export interface UpdateUserProfileDto {
+  firstName?: string;
+  lastName?: string;
+  phone?: string;
+  modifiedBy?: string;
+}
+
 export interface GetUsersQuery {
   page?: string;
   limit?: string;

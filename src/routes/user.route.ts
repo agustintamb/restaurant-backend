@@ -5,8 +5,10 @@ import {
   createUser,
   updateUser,
   deleteUser,
+  updateUserProfile,
   getUserById,
   getUsers,
+  getCurrentUser,
 } from '@/controllers/user.controller';
 
 /**
@@ -21,7 +23,9 @@ router.use(authenticateToken, requireAdmin);
 
 router.post('/', createUser);
 router.get('/', getUsers);
+router.get('/current', getCurrentUser);
 router.get('/:id', getUserById);
+router.put('/profile/:id', updateUserProfile);
 router.put('/:id', updateUser);
 router.delete('/:id', deleteUser);
 

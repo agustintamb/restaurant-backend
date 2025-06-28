@@ -1,7 +1,6 @@
 export const userSchemas = {
   User: {
     type: 'object',
-    required: ['username', 'password', 'firstName', 'lastName'],
     properties: {
       _id: {
         type: 'string',
@@ -136,6 +135,30 @@ export const userSchemas = {
       },
     },
   },
+  UpdateUserProfile: {
+    type: 'object',
+    properties: {
+      firstName: {
+        type: 'string',
+        description: 'Nuevo nombre',
+        example: 'Carlos',
+      },
+      lastName: {
+        type: 'string',
+        description: 'Nuevo apellido',
+        example: 'Rodríguez',
+      },
+      phone: {
+        type: 'string',
+        description: 'Nuevo número de teléfono',
+        example: '+54 9 11 5555-4444',
+      },
+      modifiedBy: {
+        type: 'string',
+        description: 'ID del usuario que lo modifica',
+      },
+    },
+  },
   PaginatedUsers: {
     type: 'object',
     properties: {
@@ -169,6 +192,71 @@ export const userSchemas = {
         type: 'boolean',
         description: 'Indica si hay página anterior',
         example: false,
+      },
+    },
+  },
+  // Schemas para las respuestas con el patrón message/result
+  UserResponse: {
+    type: 'object',
+    properties: {
+      message: {
+        type: 'string',
+        description: 'Mensaje de éxito',
+        example: 'Usuario obtenido exitosamente',
+      },
+      result: {
+        $ref: '#/components/schemas/User',
+      },
+    },
+  },
+  CurrentUserResponse: {
+    type: 'object',
+    properties: {
+      message: {
+        type: 'string',
+        description: 'Mensaje de éxito',
+        example: 'Datos del usuario obtenidos correctamente',
+      },
+      result: {
+        allOf: [
+          { $ref: '#/components/schemas/User' },
+          {
+            type: 'object',
+            properties: {
+              createdBy: {
+                type: 'object',
+                properties: {
+                  username: {
+                    type: 'string',
+                    description: 'Username del usuario que lo creó',
+                  },
+                },
+              },
+              updatedBy: {
+                type: 'object',
+                properties: {
+                  username: {
+                    type: 'string',
+                    description: 'Username del usuario que lo actualizó',
+                  },
+                },
+              },
+            },
+          },
+        ],
+      },
+    },
+  },
+  UsersListResponse: {
+    type: 'object',
+    properties: {
+      message: {
+        type: 'string',
+        description: 'Mensaje de éxito',
+        example: 'Lista de usuarios obtenida exitosamente',
+      },
+      result: {
+        $ref: '#/components/schemas/PaginatedUsers',
       },
     },
   },
