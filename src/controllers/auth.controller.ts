@@ -19,7 +19,7 @@ import { loginService } from '@/services/auth.service';
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/LoginResponse'
+ *               $ref: '#/components/schemas/LoginResponseWrapper'
  *       401:
  *         description: Credenciales inválidas
  *         content:
@@ -32,7 +32,10 @@ import { loginService } from '@/services/auth.service';
 export const login = async (req: Request, res: Response) => {
   try {
     const result = await loginService(req.body);
-    res.json(result);
+    res.status(200).json({
+      message: 'Inicio de sesión exitoso',
+      result,
+    });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Ha ocurrido un error';
     res.status(401).json({ error: message });

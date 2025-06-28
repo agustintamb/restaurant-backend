@@ -5,8 +5,10 @@ import {
   IUser,
   PaginatedResult,
   UpdateUserDto,
+  UpdateUserProfileDto,
 } from '@/types/user.types';
-import { Types } from 'mongoose';
+import mongoose, { Types } from 'mongoose';
+import { validateTokenService } from './auth.service';
 
 export const createUserService = async (userData: CreateUserDto): Promise<IUser> => {
   const existingUser = await User.findOne({ username: userData.username });
@@ -53,7 +55,32 @@ export const updateUserService = async (
   if (updateData.lastName) user.lastName = updateData.lastName;
   if (updateData.phone !== undefined) user.phone = updateData.phone;
   if (updateData.role) user.role = updateData.role;
-  if (updateData.modifiedBy) user.modifiedBy = new Types.ObjectId(updateData.modifiedBy)
+  if (updateData.modifiedBy) user.modifiedBy = new Types.ObjectId(updateData.modifiedBy);
+
+  await user.save();
+
+  // Return sin la pw
+  const userObject = user.toObject();
+  delete userObject.password;
+  return userObject as IUser;
+};
+
+export const updateUserProfileService = async (
+  userId: string,
+  updateData: UpdateUserProfileDto
+): Promise<IUser> => {
+  if (!Types.ObjectId.isValid(userId)) {
+    throw new Error('ID de usuario inválido');
+  }
+
+  const user = await User.findById(userId);
+  if (!user) throw new Error('Usuario no encontrado');
+
+  // Actualizar solo campos de perfil (sin username, password, role)
+  if (updateData.firstName) user.firstName = updateData.firstName;
+  if (updateData.lastName) user.lastName = updateData.lastName;
+  if (updateData.phone !== undefined) user.phone = updateData.phone;
+  if (updateData.modifiedBy) user.modifiedBy = new Types.ObjectId(updateData.modifiedBy);
 
   await user.save();
 
@@ -93,6 +120,18 @@ export const getUserByIdService = async (userId: string): Promise<IUser> => {
   const user = await User.findById(userId).select('-password');
   if (!user) throw new Error('Usuario no encontrado');
 
+  return user;
+};
+
+export const getCurrentUserDataService = async (token?: string) => {
+  if (!token) throw new Error('Token no proporcionado');
+
+  // Validate token and extract user ID
+  const { id } = await validateTokenService(token);
+  if (!mongoose.Types.ObjectId.isValid(id)) throw new Error('ID de usuario inválido');
+
+  const user = await User.findOne({ _id: id, isDeleted: { $ne: true } }).select('-password');
+  if (!user) throw new Error('Usuario no encontrado');
   return user;
 };
 
