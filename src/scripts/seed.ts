@@ -4,6 +4,8 @@ import { CONFIG } from '@/config/env.config';
 import { User } from '@/models/User.model';
 import { createAllergenService } from '@/services/allergen.service';
 import { createIngredientService } from '@/services/ingredient.service';
+import { createCategoryService } from '@/services/category.service';
+import { createSubcategoryService } from '@/services/subcategory.service';
 import { loginService } from '@/services/auth.service';
 
 // Crear interfaz para input del usuario
@@ -78,6 +80,10 @@ const requestUserConfirmation = async (collections: any[]): Promise<void> => {
   console.log('   - 5 usuarios administradores');
   console.log(`   - ${ALLERGENS.length} alérgenos`);
   console.log(`   - ${INGREDIENTS.length} ingredientes`);
+  console.log(`   - ${CATEGORIES_DATA.length} categorías`);
+  console.log(
+    `   - ${CATEGORIES_DATA.reduce((total, cat) => total + (cat.subcategories?.length || 0), 0)} subcategorías`
+  );
 
   const confirmed = await askConfirmation('¿Quieres continuar?');
 
@@ -176,6 +182,44 @@ const SAMPLE_USERS = [
  * Datos de alérgenos
  */
 const ALLERGENS = ['Gluten', 'Huevo', 'Lácteos', 'Moluscos', 'Pescado', 'Frutos secos', 'Sulfitos'];
+
+/**
+ * Datos de categorías y subcategorías
+ */
+const CATEGORIES_DATA = [
+  {
+    name: 'Entrantes',
+  },
+  {
+    name: 'Ensaladas',
+  },
+  {
+    name: 'Platos Principales',
+    subcategories: [
+      {
+        name: 'Carnes Rojas',
+      },
+      {
+        name: 'Carnes Blancas',
+      },
+      {
+        name: 'Pescados',
+      },
+    ],
+  },
+  {
+    name: 'Pastas',
+  },
+  {
+    name: 'Postres',
+  },
+  {
+    name: 'Bebidas Alcohólicas',
+  },
+  {
+    name: 'Bebidas sin Alcohol',
+  },
+];
 
 /**
  * Datos de ingredientes
@@ -359,6 +403,53 @@ const createSampleIngredients = async (adminToken: string): Promise<void> => {
 };
 
 /**
+ * Crear categorías y subcategorías de prueba
+ */
+const createSampleCategories = async (adminToken: string): Promise<void> => {
+  console.log('\n📂 Creando categorías y subcategorías de prueba...');
+  let createdCategoriesCount = 0;
+  let createdSubcategoriesCount = 0;
+
+  for (const categoryData of CATEGORIES_DATA) {
+    try {
+      // Crear la categoría
+      const category = await createCategoryService({ name: categoryData.name }, adminToken);
+      console.log(`   ✅ Categoría creada: ${categoryData.name}`);
+      createdCategoriesCount++;
+
+      // Crear subcategorías si existen
+      if (categoryData.subcategories && categoryData.subcategories.length > 0) {
+        console.log(`     📁 Creando subcategorías para: ${categoryData.name}`);
+
+        for (const subcategoryData of categoryData.subcategories) {
+          try {
+            await createSubcategoryService(
+              {
+                name: subcategoryData.name,
+                categoryId: (category as any)._id.toString(),
+              },
+              adminToken
+            );
+            console.log(`       ✅ Subcategoría creada: ${subcategoryData.name}`);
+            createdSubcategoriesCount++;
+          } catch (subcategoryError) {
+            console.error(
+              `       ❌ Error creando subcategoría ${subcategoryData.name}:`,
+              subcategoryError
+            );
+          }
+        }
+      }
+    } catch (error) {
+      console.error(`   ❌ Error creando categoría ${categoryData.name}:`, error);
+    }
+  }
+
+  console.log(`✅ ${createdCategoriesCount} categorías creadas exitosamente`);
+  console.log(`✅ ${createdSubcategoriesCount} subcategorías creadas exitosamente`);
+};
+
+/**
  * Generar token de autenticación para el primer usuario admin
  */
 const generateAdminToken = async (adminUserId: string): Promise<string> => {
@@ -383,12 +474,20 @@ const generateAdminToken = async (adminUserId: string): Promise<string> => {
  */
 const verifySeedResult = async (): Promise<void> => {
   const userCount = await User.countDocuments();
+  const totalSubcategories = CATEGORIES_DATA.reduce(
+    (total, cat) => total + (cat.subcategories?.length || 0),
+    0
+  );
 
   console.log('');
   console.log('🌱 ¡DATOS DE PRUEBA INSERTADOS EXITOSAMENTE!');
   console.log(`✅ ${userCount} usuarios en la base de datos`);
-  console.log('📧 Usuarios de prueba disponibles:');
+  console.log(`✅ ${ALLERGENS.length} alérgenos creados`);
+  console.log(`✅ ${INGREDIENTS.length} ingredientes creados`);
+  console.log(`✅ ${CATEGORIES_DATA.length} categorías creadas`);
+  console.log(`✅ ${totalSubcategories} subcategorías creadas`);
 
+  console.log('📧 Usuarios de prueba disponibles:');
   SAMPLE_USERS.forEach(user => {
     console.log(`   - ${user.username} / ${user.password}`);
   });
@@ -437,7 +536,10 @@ const seed = async (): Promise<void> => {
     // 9. Crear ingredientes usando el servicio
     await createSampleIngredients(adminToken);
 
-    // 10. Verificar resultado
+    // 10. Crear categorías y subcategorías usando los servicios
+    await createSampleCategories(adminToken);
+
+    // 11. Verificar resultado
     await verifySeedResult();
   } catch (error) {
     console.error('❌ Error durante la inserción de datos:', error);
