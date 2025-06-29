@@ -8,9 +8,8 @@ export const loginService = async (loginData: LoginRequest) => {
 
   // Buscar usuario
   const user = await User.findOne({ username });
-  if (!user) {
-    throw new Error('Credenciales inválidas');
-  }
+  if (!user) throw new Error('Credenciales inválidas');
+  if (user.isDeleted) throw new Error('Usuario eliminado');
 
   // Verificar contraseña
   const isPasswordValid = await user.comparePassword(password);

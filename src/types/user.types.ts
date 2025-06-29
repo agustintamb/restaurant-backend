@@ -10,14 +10,13 @@ export interface IUser extends Document {
   comparePassword(password: string): Promise<boolean>;
   createdBy?: Types.ObjectId;
   createdAt: Date;
-  modifiedBy?: Types.ObjectId;
-  modifiedAt: Date;
+  updatedBy?: Types.ObjectId;
   deletedBy?: Types.ObjectId;
   deletedAt?: Date;
   isDeleted: boolean;
 }
 
-export interface CreateUserDto {
+export interface ICreateUser {
   username: string;
   password: string;
   firstName: string;
@@ -27,21 +26,19 @@ export interface CreateUserDto {
   createdBy?: string;
 }
 
-export interface UpdateUserDto {
+export interface IUpdateUser {
   username?: string;
   password?: string;
   firstName?: string;
   lastName?: string;
   phone?: string;
   role?: 'admin';
-  modifiedBy?: string;
 }
 
-export interface UpdateUserProfileDto {
+export interface IUpdateUserProfile {
   firstName?: string;
   lastName?: string;
   phone?: string;
-  modifiedBy?: string;
 }
 
 export interface GetUsersQuery {

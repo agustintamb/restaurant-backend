@@ -1,16 +1,19 @@
 import { User } from '@/models/User.model';
 import {
-  CreateUserDto,
+  ICreateUser,
   GetUsersQuery,
   IUser,
   PaginatedResult,
-  UpdateUserDto,
-  UpdateUserProfileDto,
+  IUpdateUser,
+  IUpdateUserProfile,
 } from '@/types/user.types';
 import mongoose, { Types } from 'mongoose';
 import { validateTokenService } from './auth.service';
 
-export const createUserService = async (userData: CreateUserDto): Promise<IUser> => {
+export const createUserService = async (userData: ICreateUser, token: string): Promise<IUser> => {
+  // Obtener el usuario que realiza la acción desde el token
+  const { id: currentUserId } = await validateTokenService(token);
+
   const existingUser = await User.findOne({ username: userData.username });
   if (existingUser) throw new Error('El usuario ya existe');
 
@@ -21,7 +24,7 @@ export const createUserService = async (userData: CreateUserDto): Promise<IUser>
     lastName: userData.lastName,
     phone: userData.phone,
     role: userData.role || 'admin',
-    createdBy: userData.createdBy ? new Types.ObjectId(userData.createdBy) : undefined,
+    createdBy: new Types.ObjectId(currentUserId), // Usuario que crea
   });
   await user.save();
 
@@ -33,8 +36,12 @@ export const createUserService = async (userData: CreateUserDto): Promise<IUser>
 
 export const updateUserService = async (
   userId: string,
-  updateData: UpdateUserDto
+  updateData: IUpdateUser,
+  token: string
 ): Promise<IUser> => {
+  // Obtener el usuario que realiza la acción desde el token
+  const { id: currentUserId } = await validateTokenService(token);
+
   if (!Types.ObjectId.isValid(userId)) {
     throw new Error('ID de usuario inválido');
   }
@@ -55,7 +62,9 @@ export const updateUserService = async (
   if (updateData.lastName) user.lastName = updateData.lastName;
   if (updateData.phone !== undefined) user.phone = updateData.phone;
   if (updateData.role) user.role = updateData.role;
-  if (updateData.modifiedBy) user.modifiedBy = new Types.ObjectId(updateData.modifiedBy);
+
+  // Establecer automáticamente el usuario que modifica
+  user.updatedBy = new Types.ObjectId(currentUserId);
 
   await user.save();
 
@@ -67,8 +76,12 @@ export const updateUserService = async (
 
 export const updateUserProfileService = async (
   userId: string,
-  updateData: UpdateUserProfileDto
+  updateData: IUpdateUserProfile,
+  token: string
 ): Promise<IUser> => {
+  // Obtener el usuario que realiza la acción desde el token
+  const { id: currentUserId } = await validateTokenService(token);
+
   if (!Types.ObjectId.isValid(userId)) {
     throw new Error('ID de usuario inválido');
   }
@@ -80,7 +93,9 @@ export const updateUserProfileService = async (
   if (updateData.firstName) user.firstName = updateData.firstName;
   if (updateData.lastName) user.lastName = updateData.lastName;
   if (updateData.phone !== undefined) user.phone = updateData.phone;
-  if (updateData.modifiedBy) user.modifiedBy = new Types.ObjectId(updateData.modifiedBy);
+
+  // Establecer automáticamente el usuario que modifica
+  user.updatedBy = new Types.ObjectId(currentUserId);
 
   await user.save();
 
@@ -92,8 +107,11 @@ export const updateUserProfileService = async (
 
 export const deleteUserService = async (
   userId: string,
-  deletedBy?: string
+  token: string
 ): Promise<{ message: string }> => {
+  // Obtener el usuario que realiza la acción desde el token
+  const { id: currentUserId } = await validateTokenService(token);
+
   if (!Types.ObjectId.isValid(userId)) {
     throw new Error('ID de usuario inválido');
   }
@@ -102,10 +120,10 @@ export const deleteUserService = async (
   if (!user) throw new Error('Usuario no encontrado');
   if (user.isDeleted) throw new Error('El usuario ya está eliminado');
 
-  // Eliminacion lógica
+  // Eliminación lógica con auditoría
   user.isDeleted = true;
   user.deletedAt = new Date();
-  if (deletedBy) user.deletedBy = new Types.ObjectId(deletedBy);
+  user.deletedBy = new Types.ObjectId(currentUserId); // Usuario que elimina
 
   await user.save();
 
@@ -153,21 +171,25 @@ export const getUsersService = async (query: GetUsersQuery): Promise<PaginatedRe
     ];
   }
 
-  // Configurar opciones para incluir eliminados si es necesario
-  const options: any = {};
-  if (includeDeleted) options.includeDeleted = true;
+  // No incluir eliminados por defecto
+  if (!includeDeleted) {
+    filters.isDeleted = { $ne: true };
+  }
 
   // Calcular skip
   const skip = (page - 1) * limit;
 
-  // Ejecutar consultas
+  // Ejecutar consultas con populate para obtener datos de los usuarios en createdBy, updatedBy, deletedBy
   const [users, totalUsers] = await Promise.all([
-    User.find(filters, null, options)
+    User.find(filters)
       .select('-password')
+      .populate('createdBy', 'firstName lastName username')
+      .populate('updatedBy', 'firstName lastName username')
+      .populate('deletedBy', 'firstName lastName username')
       .skip(skip)
       .limit(limit)
       .sort({ createdAt: -1 }),
-    User.countDocuments(includeDeleted ? { ...filters } : { ...filters, isDeleted: { $ne: true } }),
+    User.countDocuments(filters),
   ]);
 
   const totalPages = Math.ceil(totalUsers / limit);

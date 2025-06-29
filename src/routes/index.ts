@@ -1,14 +1,14 @@
 import { Router } from 'express';
 import authRoutes from './auth.route';
-import productRoutes from './product.route';
 import userRoutes from './user.route';
-import categoryRoutes from './category.route';
+import allergenRoutes from './allergen.route';
+import ingredientRoutes from './ingredient.route';
 
 const router = Router();
 
 router.use('/auth', authRoutes);
 router.use('/users', userRoutes);
-router.use('/products', productRoutes);
-router.use('/categories', categoryRoutes);
+router.use('/allergens', allergenRoutes);
+router.use('/ingredients', ingredientRoutes);
 
 export default router;

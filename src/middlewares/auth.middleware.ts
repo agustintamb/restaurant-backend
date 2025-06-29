@@ -33,6 +33,11 @@ export const authenticateToken = async (
       return;
     }
 
+    if (user.isDeleted) {
+      res.status(403).json({ error: 'Usuario eliminado' });
+      return;
+    }
+
     req.user = {
       id: String(user._id),
       username: user.username,
