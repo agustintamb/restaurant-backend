@@ -5,6 +5,7 @@ export const userSchemas = {
       _id: {
         type: 'string',
         description: 'ID único del usuario',
+        example: '64f1a2b3c4d5e6f7a8b9c0d1',
       },
       username: {
         type: 'string',
@@ -25,6 +26,7 @@ export const userSchemas = {
         type: 'string',
         description: 'Número de teléfono',
         example: '+54 9 11 1234-5678',
+        nullable: true,
       },
       role: {
         type: 'string',
@@ -32,27 +34,39 @@ export const userSchemas = {
         description: 'Rol del usuario',
         example: 'admin',
       },
+      // Campos de auditoría
       createdBy: {
-        type: 'string',
-        description: 'ID del usuario que lo creó',
+        oneOf: [
+          { type: 'string', description: 'ID del usuario que lo creó' },
+          { $ref: '#/components/schemas/UserReference' },
+        ],
+        nullable: true,
       },
-      modifiedBy: {
-        type: 'string',
-        description: 'ID del usuario que lo modificó',
+      updatedBy: {
+        oneOf: [
+          { type: 'string', description: 'ID del usuario que lo modificó' },
+          { $ref: '#/components/schemas/UserReference' },
+        ],
+        nullable: true,
       },
       deletedBy: {
-        type: 'string',
-        description: 'ID del usuario que lo eliminó',
+        oneOf: [
+          { type: 'string', description: 'ID del usuario que lo eliminó' },
+          { $ref: '#/components/schemas/UserReference' },
+        ],
+        nullable: true,
       },
       deletedAt: {
         type: 'string',
         format: 'date-time',
         description: 'Fecha de eliminación',
+        nullable: true,
       },
       isDeleted: {
         type: 'boolean',
         description: 'Estado de eliminación lógica',
         example: false,
+        default: false,
       },
       createdAt: {
         type: 'string',
@@ -65,29 +79,70 @@ export const userSchemas = {
         description: 'Fecha de última actualización',
       },
     },
+    required: [
+      '_id',
+      'username',
+      'firstName',
+      'lastName',
+      'role',
+      'isDeleted',
+      'createdAt',
+      'updatedAt',
+    ],
   },
-  CreateUser: {
+
+  // Referencia de usuario para populate
+  UserReference: {
+    type: 'object',
+    properties: {
+      _id: {
+        type: 'string',
+        description: 'ID del usuario',
+      },
+      firstName: {
+        type: 'string',
+        description: 'Nombre del usuario',
+      },
+      lastName: {
+        type: 'string',
+        description: 'Apellido del usuario',
+      },
+      username: {
+        type: 'string',
+        description: 'Email del usuario',
+      },
+    },
+  },
+
+  // Schema para crear usuario
+  CreateUserRequest: {
     type: 'object',
     required: ['username', 'password', 'firstName', 'lastName'],
     properties: {
       username: {
         type: 'string',
-        description: 'Nombre de usuario (email)',
+        format: 'email',
+        description: 'Email del usuario (debe ser único)',
         example: 'nuevo@mail.com',
       },
       password: {
         type: 'string',
         description: 'Contraseña del usuario',
+        minLength: 6,
         example: 'password123',
       },
       firstName: {
         type: 'string',
         description: 'Nombre del usuario',
+        minLength: 2,
+        maxLength: 50,
         example: 'María',
       },
       lastName: {
         type: 'string',
         description: 'Apellido del usuario',
+        minLength: 2,
+        maxLength: 50,
         example: 'González',
       },
       phone: {
@@ -95,33 +150,43 @@ export const userSchemas = {
         description: 'Número de teléfono (opcional)',
         example: '+54 9 11 9876-5432',
       },
-      createdBy: {
+      role: {
         type: 'string',
-        description: 'ID del usuario que lo crea',
+        enum: ['admin'],
+        description: 'Rol del usuario (opcional, por defecto admin)',
+        example: 'admin',
       },
     },
   },
-  UpdateUser: {
+
+  // Schema para actualizar usuario
+  UpdateUserRequest: {
     type: 'object',
     properties: {
       username: {
         type: 'string',
-        description: 'Nuevo nombre de usuario',
+        format: 'email',
+        description: 'Nuevo email del usuario',
         example: 'actualizado@mail.com',
       },
       password: {
         type: 'string',
         description: 'Nueva contraseña',
+        minLength: 6,
         example: 'newpassword123',
       },
       firstName: {
         type: 'string',
         description: 'Nuevo nombre',
+        minLength: 2,
+        maxLength: 50,
         example: 'Carlos',
       },
       lastName: {
         type: 'string',
         description: 'Nuevo apellido',
+        minLength: 2,
+        maxLength: 50,
         example: 'Rodríguez',
       },
       phone: {
@@ -129,23 +194,31 @@ export const userSchemas = {
         description: 'Nuevo número de teléfono',
         example: '+54 9 11 5555-4444',
       },
-      modifiedBy: {
+      role: {
         type: 'string',
-        description: 'ID del usuario que lo modifica',
+        enum: ['admin'],
+        description: 'Nuevo rol del usuario',
+        example: 'admin',
       },
     },
   },
-  UpdateUserProfile: {
+
+  // Schema para actualizar perfil
+  UpdateUserProfileRequest: {
     type: 'object',
     properties: {
       firstName: {
         type: 'string',
         description: 'Nuevo nombre',
+        minLength: 2,
+        maxLength: 50,
         example: 'Carlos',
       },
       lastName: {
         type: 'string',
         description: 'Nuevo apellido',
+        minLength: 2,
+        maxLength: 50,
         example: 'Rodríguez',
       },
       phone: {
@@ -153,12 +226,10 @@ export const userSchemas = {
         description: 'Nuevo número de teléfono',
         example: '+54 9 11 5555-4444',
       },
-      modifiedBy: {
-        type: 'string',
-        description: 'ID del usuario que lo modifica',
-      },
     },
   },
+
+  // Schema para la paginación de usuarios
   PaginatedUsers: {
     type: 'object',
     properties: {
@@ -167,6 +238,7 @@ export const userSchemas = {
         items: {
           $ref: '#/components/schemas/User',
         },
+        description: 'Lista de usuarios',
       },
       totalUsers: {
         type: 'number',
@@ -194,21 +266,56 @@ export const userSchemas = {
         example: false,
       },
     },
+    required: ['users', 'totalUsers', 'totalPages', 'currentPage', 'hasNextPage', 'hasPrevPage'],
   },
-  // Schemas para las respuestas con el patrón message/result
+
+  // Schema para query parameters de getUsers
+  GetUsersQuery: {
+    type: 'object',
+    properties: {
+      page: {
+        type: 'string',
+        description: 'Número de página',
+        example: '1',
+        default: '1',
+      },
+      limit: {
+        type: 'string',
+        description: 'Cantidad de usuarios por página',
+        example: '10',
+        default: '10',
+      },
+      search: {
+        type: 'string',
+        description: 'Término de búsqueda (busca en username, firstName, lastName, phone)',
+        example: 'juan',
+      },
+      includeDeleted: {
+        type: 'string',
+        enum: ['true', 'false'],
+        description: 'Incluir usuarios eliminados',
+        example: 'false',
+        default: 'false',
+      },
+    },
+  },
+
+  // Schemas para respuestas con patrón message/result
   UserResponse: {
     type: 'object',
     properties: {
       message: {
         type: 'string',
         description: 'Mensaje de éxito',
-        example: 'Usuario obtenido exitosamente',
+        example: 'Usuario creado exitosamente',
       },
       result: {
         $ref: '#/components/schemas/User',
       },
     },
+    required: ['message', 'result'],
   },
+
   CurrentUserResponse: {
     type: 'object',
     properties: {
@@ -218,35 +325,12 @@ export const userSchemas = {
         example: 'Datos del usuario obtenidos correctamente',
       },
       result: {
-        allOf: [
-          { $ref: '#/components/schemas/User' },
-          {
-            type: 'object',
-            properties: {
-              createdBy: {
-                type: 'object',
-                properties: {
-                  username: {
-                    type: 'string',
-                    description: 'Username del usuario que lo creó',
-                  },
-                },
-              },
-              updatedBy: {
-                type: 'object',
-                properties: {
-                  username: {
-                    type: 'string',
-                    description: 'Username del usuario que lo actualizó',
-                  },
-                },
-              },
-            },
-          },
-        ],
+        $ref: '#/components/schemas/User',
       },
     },
+    required: ['message', 'result'],
   },
+
   UsersListResponse: {
     type: 'object',
     properties: {
@@ -259,5 +343,31 @@ export const userSchemas = {
         $ref: '#/components/schemas/PaginatedUsers',
       },
     },
+    required: ['message', 'result'],
+  },
+
+  DeleteUserResponse: {
+    type: 'object',
+    properties: {
+      message: {
+        type: 'string',
+        description: 'Mensaje de confirmación',
+        example: 'Usuario eliminado exitosamente',
+      },
+    },
+    required: ['message'],
+  },
+
+  // Schema para errores
+  ErrorResponse: {
+    type: 'object',
+    properties: {
+      error: {
+        type: 'string',
+        description: 'Mensaje de error',
+        example: 'El usuario ya existe',
+      },
+    },
+    required: ['error'],
   },
 };

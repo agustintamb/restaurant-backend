@@ -8,13 +8,14 @@ import {
   getUsersService,
   getCurrentUserDataService,
 } from '@/services/user.service';
+import getTokenFromRequest from '@/utils/getTokenFromRequest';
 
 /**
  * @swagger
  * /users:
  *   post:
- *     summary: Crear un nuevo usuario
- *     tags: [Users]
+ *     summary: Crear nuevo usuario
+ *     tags: [Usuarios]
  *     security:
  *       - bearerAuth: []
  *     requestBody:
@@ -22,7 +23,7 @@ import {
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/CreateUser'
+ *             $ref: '#/components/schemas/CreateUserRequest'
  *     responses:
  *       201:
  *         description: Usuario creado exitosamente
@@ -35,17 +36,18 @@ import {
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/Error'
+ *               $ref: '#/components/schemas/ErrorResponse'
  *       401:
- *         description: Token no válido o expirado
+ *         description: No autorizado
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/Error'
+ *               $ref: '#/components/schemas/ErrorResponse'
  */
 export const createUser = async (req: Request, res: Response) => {
   try {
-    const user = await createUserService(req.body);
+    const token = getTokenFromRequest(req);
+    const user = await createUserService(req.body, token);
     res.status(201).json({
       message: 'Usuario creado exitosamente',
       result: user,
@@ -60,8 +62,8 @@ export const createUser = async (req: Request, res: Response) => {
  * @swagger
  * /users/{id}:
  *   put:
- *     summary: Actualizar un usuario existente
- *     tags: [Users]
+ *     summary: Actualizar usuario
+ *     tags: [Usuarios]
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -76,7 +78,7 @@ export const createUser = async (req: Request, res: Response) => {
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/UpdateUser'
+ *             $ref: '#/components/schemas/UpdateUserRequest'
  *     responses:
  *       200:
  *         description: Usuario actualizado exitosamente
@@ -85,27 +87,24 @@ export const createUser = async (req: Request, res: Response) => {
  *             schema:
  *               $ref: '#/components/schemas/UserResponse'
  *       400:
- *         description: Error en la validación o ID inválido
+ *         description: Error en la validación o datos inválidos
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/Error'
+ *               $ref: '#/components/schemas/ErrorResponse'
  *       404:
  *         description: Usuario no encontrado
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/Error'
+ *               $ref: '#/components/schemas/ErrorResponse'
  *       401:
- *         description: Token no válido o expirado
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
+ *         description: No autorizado
  */
 export const updateUser = async (req: Request, res: Response) => {
   try {
-    const user = await updateUserService(req.params.id, req.body);
+    const token = getTokenFromRequest(req);
+    const user = await updateUserService(req.params.id, req.body, token);
     res.status(200).json({
       message: 'Usuario actualizado exitosamente',
       result: user,
@@ -120,8 +119,8 @@ export const updateUser = async (req: Request, res: Response) => {
  * @swagger
  * /users/profile/{id}:
  *   put:
- *     summary: Actualizar perfil de usuario (sin contraseña)
- *     tags: [Users]
+ *     summary: Actualizar perfil de usuario
+ *     tags: [Usuarios]
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -136,7 +135,7 @@ export const updateUser = async (req: Request, res: Response) => {
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/UpdateUserProfile'
+ *             $ref: '#/components/schemas/UpdateUserProfileRequest'
  *     responses:
  *       200:
  *         description: Perfil actualizado exitosamente
@@ -145,27 +144,20 @@ export const updateUser = async (req: Request, res: Response) => {
  *             schema:
  *               $ref: '#/components/schemas/UserResponse'
  *       400:
- *         description: Error en la validación o ID inválido
+ *         description: Error en la validación
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/Error'
+ *               $ref: '#/components/schemas/ErrorResponse'
  *       404:
  *         description: Usuario no encontrado
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
  *       401:
- *         description: Token no válido o expirado
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
+ *         description: No autorizado
  */
 export const updateUserProfile = async (req: Request, res: Response) => {
   try {
-    const user = await updateUserProfileService(req.params.id, req.body);
+    const token = getTokenFromRequest(req);
+    const user = await updateUserProfileService(req.params.id, req.body, token);
     res.status(200).json({
       message: 'Perfil actualizado exitosamente',
       result: user,
@@ -180,8 +172,8 @@ export const updateUserProfile = async (req: Request, res: Response) => {
  * @swagger
  * /users/{id}:
  *   delete:
- *     summary: Eliminar un usuario (eliminación lógica)
- *     tags: [Users]
+ *     summary: Eliminar usuario (eliminación lógica)
+ *     tags: [Usuarios]
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -197,29 +189,22 @@ export const updateUserProfile = async (req: Request, res: Response) => {
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/Success'
+ *               $ref: '#/components/schemas/DeleteUserResponse'
  *       400:
- *         description: Error en la validación, ID inválido o usuario ya eliminado
+ *         description: Error en la solicitud o usuario ya eliminado
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/Error'
+ *               $ref: '#/components/schemas/ErrorResponse'
  *       404:
  *         description: Usuario no encontrado
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
  *       401:
- *         description: Token no válido o expirado
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
+ *         description: No autorizado
  */
 export const deleteUser = async (req: Request, res: Response) => {
   try {
-    const result = await deleteUserService(req.params.id);
+    const token = getTokenFromRequest(req);
+    const result = await deleteUserService(req.params.id, token);
     res.status(200).json(result);
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Ha ocurrido un error';
@@ -231,8 +216,8 @@ export const deleteUser = async (req: Request, res: Response) => {
  * @swagger
  * /users/{id}:
  *   get:
- *     summary: Obtener un usuario por ID
- *     tags: [Users]
+ *     summary: Obtener usuario por ID
+ *     tags: [Usuarios]
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -244,29 +229,21 @@ export const deleteUser = async (req: Request, res: Response) => {
  *         description: ID del usuario
  *     responses:
  *       200:
- *         description: Usuario encontrado
+ *         description: Usuario obtenido exitosamente
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/UserResponse'
- *       400:
- *         description: ID de usuario inválido
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
  *       404:
  *         description: Usuario no encontrado
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/Error'
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       400:
+ *         description: ID inválido
  *       401:
- *         description: Token no válido o expirado
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
+ *         description: No autorizado
  */
 export const getUserById = async (req: Request, res: Response) => {
   try {
@@ -286,7 +263,7 @@ export const getUserById = async (req: Request, res: Response) => {
  * /users/current:
  *   get:
  *     summary: Obtener datos del usuario actual
- *     tags: [Users]
+ *     tags: [Usuarios]
  *     security:
  *       - bearerAuth: []
  *     responses:
@@ -297,27 +274,17 @@ export const getUserById = async (req: Request, res: Response) => {
  *             schema:
  *               $ref: '#/components/schemas/CurrentUserResponse'
  *       400:
- *         description: Token no proporcionado o ID inválido
+ *         description: Token inválido o usuario no encontrado
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/Error'
- *       404:
- *         description: Usuario no encontrado
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
+ *               $ref: '#/components/schemas/ErrorResponse'
  *       401:
- *         description: Token no válido o expirado
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
+ *         description: No autorizado o token no proporcionado
  */
 export const getCurrentUser = async (req: Request, res: Response) => {
   try {
-    const token = req.headers.authorization?.split(' ')[1];
+    const token = getTokenFromRequest(req);
     const user = await getCurrentUserDataService(token);
     res.status(200).json({
       message: 'Datos del usuario obtenidos correctamente',
@@ -333,56 +300,50 @@ export const getCurrentUser = async (req: Request, res: Response) => {
  * @swagger
  * /users:
  *   get:
- *     summary: Obtener lista de usuarios con paginación
- *     tags: [Users]
+ *     summary: Obtener lista de usuarios
+ *     tags: [Usuarios]
  *     security:
  *       - bearerAuth: []
  *     parameters:
  *       - in: query
  *         name: page
  *         schema:
- *           type: integer
- *           minimum: 1
- *           default: 1
+ *           type: string
+ *           default: "1"
  *         description: Número de página
  *       - in: query
  *         name: limit
  *         schema:
- *           type: integer
- *           minimum: 1
- *           maximum: 100
- *           default: 10
+ *           type: string
+ *           default: "10"
  *         description: Cantidad de usuarios por página
  *       - in: query
  *         name: search
  *         schema:
  *           type: string
- *         description: Buscar por nombre de usuario, nombre, apellido o teléfono
+ *         description: Término de búsqueda (busca en username, firstName, lastName, phone)
  *       - in: query
  *         name: includeDeleted
  *         schema:
- *           type: boolean
- *           default: false
+ *           type: string
+ *           enum: ["true", "false"]
+ *           default: "false"
  *         description: Incluir usuarios eliminados
  *     responses:
  *       200:
- *         description: Lista de usuarios con paginación
+ *         description: Lista de usuarios obtenida exitosamente
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/UsersListResponse'
  *       400:
- *         description: Error en los parámetros
+ *         description: Error en la solicitud
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/Error'
+ *               $ref: '#/components/schemas/ErrorResponse'
  *       401:
- *         description: Token no válido o expirado
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
+ *         description: No autorizado
  */
 export const getUsers = async (req: Request, res: Response) => {
   try {

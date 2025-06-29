@@ -17,7 +17,7 @@ const userSchema = new Schema<IUser>(
       ref: 'User',
       required: false,
     },
-    modifiedBy: {
+    updatedBy: {
       type: Schema.Types.ObjectId,
       ref: 'User',
       required: false,
@@ -45,12 +45,6 @@ const userSchema = new Schema<IUser>(
 userSchema.pre('save', async function (next) {
   if (!this.isModified('password')) return next();
   if (this.password) this.password = await bcrypt.hash(this.password, 12);
-  next();
-});
-
-// Middleware para actualizar modifiedAt cuando se modifica el documento
-userSchema.pre('save', function (next) {
-  if (!this.isNew) this.modifiedAt = new Date();
   next();
 });
 
