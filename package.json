@@ -10,7 +10,7 @@
     "lint:fix": "eslint src --ext .ts --fix",
     "format": "prettier --write \"src/**/*.{ts,json}\"",
     "db:wipe": "ts-node src/scripts/wipe.ts",
-    "db:simpleSeed": "ts-node src/scripts/simpleSeed.ts"
+    "db:seed": "ts-node src/scripts/seed.ts"
   },
   "keywords": [],
   "author": "",
