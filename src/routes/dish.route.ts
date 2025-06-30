@@ -8,16 +8,19 @@ import {
   getDishById,
   getDishes,
 } from '@/controllers/dish.controller';
+import { uploadMiddleware } from '@/utils/upload';
 
 const router = Router();
 
 // Todas las rutas de platos requieren autenticación y rol admin
 router.use(authenticateToken, requireAdmin);
 
-router.post('/', createDish);
+// with uploadMiddleware
+router.post('/', uploadMiddleware, createDish);
+router.put('/:id', uploadMiddleware, updateDish);
+
 router.get('/', getDishes);
 router.get('/:id', getDishById);
-router.put('/:id', updateDish);
 router.delete('/:id', deleteDish);
 
 export default router;
