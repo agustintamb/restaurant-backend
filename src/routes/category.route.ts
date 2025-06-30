@@ -5,6 +5,7 @@ import {
   createCategory,
   updateCategory,
   deleteCategory,
+  restoreCategory,
   getCategoryById,
   getCategories,
 } from '@/controllers/category.controller';
@@ -19,5 +20,6 @@ router.get('/', getCategories);
 router.get('/:id', getCategoryById);
 router.put('/:id', updateCategory);
 router.delete('/:id', deleteCategory);
+router.patch('/:id/restore', restoreCategory);
 
 export default router;

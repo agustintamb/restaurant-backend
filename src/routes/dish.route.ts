@@ -7,6 +7,7 @@ import {
   deleteDish,
   getDishById,
   getDishes,
+  restoreDish,
 } from '@/controllers/dish.controller';
 import { uploadMiddleware } from '@/utils/upload';
 
@@ -22,5 +23,6 @@ router.put('/:id', uploadMiddleware, updateDish);
 router.get('/', getDishes);
 router.get('/:id', getDishById);
 router.delete('/:id', deleteDish);
+router.patch('/:id/restore', restoreDish);
 
 export default router;

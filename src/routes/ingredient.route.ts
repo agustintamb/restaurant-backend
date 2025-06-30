@@ -5,6 +5,7 @@ import {
   createIngredient,
   updateIngredient,
   deleteIngredient,
+  restoreIngredient,
   getIngredientById,
   getIngredients,
 } from '@/controllers/ingredient.controller';
@@ -19,5 +20,6 @@ router.get('/', getIngredients);
 router.get('/:id', getIngredientById);
 router.put('/:id', updateIngredient);
 router.delete('/:id', deleteIngredient);
+router.patch('/:id/restore', restoreIngredient);
 
 export default router;

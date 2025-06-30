@@ -74,6 +74,10 @@ export const deleteAllergenService = async (
   if (!allergen) throw new Error('Alérgeno no encontrado');
   if (allergen.isDeleted) throw new Error('El alérgeno ya está eliminado');
 
+  // Limpiar campos de restore si existían
+  allergen.restoredAt = undefined;
+  allergen.restoredBy = undefined;
+
   // Eliminación lógica con auditoría
   allergen.isDeleted = true;
   allergen.deletedAt = new Date();
@@ -84,6 +88,30 @@ export const deleteAllergenService = async (
   return {
     message: 'Alérgeno eliminado exitosamente',
   };
+};
+
+export const restoreAllergenService = async (
+  allergenId: string,
+  token: string
+): Promise<IAllergen> => {
+  // Obtener el usuario que realiza la acción desde el token
+  const { id: currentUserId } = await validateTokenService(token);
+
+  if (!Types.ObjectId.isValid(allergenId)) {
+    throw new Error('ID de alérgeno inválido');
+  }
+
+  const allergen = await Allergen.findById(allergenId);
+  if (!allergen) throw new Error('Alérgeno no encontrado');
+  if (!allergen.isDeleted) throw new Error('El alérgeno no está eliminado');
+
+  // Restaurar con auditoría
+  allergen.isDeleted = false;
+  allergen.restoredAt = new Date();
+  allergen.restoredBy = new Types.ObjectId(currentUserId);
+
+  await allergen.save();
+  return allergen;
 };
 
 export const getAllergenByIdService = async (allergenId: string): Promise<IAllergen> => {
@@ -124,6 +152,7 @@ export const getAllergensService = async (
       .populate('createdBy', 'firstName lastName username')
       .populate('updatedBy', 'firstName lastName username')
       .populate('deletedBy', 'firstName lastName username')
+      .populate('restoredBy', 'firstName lastName username')
       .skip(skip)
       .limit(limit)
       .sort({ createdAt: -1 }),

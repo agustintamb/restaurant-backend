@@ -6,6 +6,8 @@ export interface IAllergen extends Document {
   createdAt: Date;
   updatedBy?: Types.ObjectId;
   deletedBy?: Types.ObjectId;
+  restoredBy?: Types.ObjectId;
+  restoredAt?: Date;
   deletedAt?: Date;
   isDeleted: boolean;
 }

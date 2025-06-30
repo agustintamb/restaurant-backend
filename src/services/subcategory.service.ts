@@ -9,6 +9,7 @@ import {
   IUpdateSubcategory,
 } from '@/types/subcategory.types';
 import { validateTokenService } from './auth.service';
+import { Dish } from '@/models/Dish.model';
 
 export const createSubcategoryService = async (
   subcategoryData: ICreateSubcategory,
@@ -108,6 +109,36 @@ export const updateSubcategoryService = async (
   return subcategory;
 };
 
+export const restoreSubcategoryService = async (
+  subcategoryId: string,
+  token: string
+): Promise<ISubcategory> => {
+  // Obtener el usuario que realiza la acción desde el token
+  const { id: currentUserId } = await validateTokenService(token);
+
+  if (!Types.ObjectId.isValid(subcategoryId)) {
+    throw new Error('ID de subcategoría inválido');
+  }
+
+  const subcategory = await Subcategory.findById(subcategoryId);
+  if (!subcategory) throw new Error('Subcategoría no encontrada');
+  if (!subcategory.isDeleted) throw new Error('La subcategoría no está eliminada');
+
+  // Restaurar con auditoría
+  subcategory.isDeleted = false;
+  subcategory.restoredAt = new Date();
+  subcategory.restoredBy = new Types.ObjectId(currentUserId);
+
+  await subcategory.save();
+
+  // Agregar la subcategoría de vuelta al array de la categoría
+  await Category.findByIdAndUpdate(subcategory.category, {
+    $addToSet: { subcategories: subcategory._id },
+  });
+
+  return subcategory;
+};
+
 export const deleteSubcategoryService = async (
   subcategoryId: string,
   token: string
@@ -123,12 +154,23 @@ export const deleteSubcategoryService = async (
   if (!subcategory) throw new Error('Subcategoría no encontrada');
   if (subcategory.isDeleted) throw new Error('La subcategoría ya está eliminada');
 
+  // check if a subcategory is used by any dish
+  const dishCount = await Dish.countDocuments({ subcategory: subcategory._id });
+  if (dishCount > 0)
+    throw new Error(
+      'No se puede eliminar la subcategoría porque está asignada por uno o más platos'
+    );
+
   // Remover la subcategoría del array de la categoría
   await Category.findByIdAndUpdate(subcategory.category, {
     $pull: { subcategories: subcategory._id },
   });
 
-  // Eliminación lógica con auditoría
+  // Limpiar campos de restore si existían
+  subcategory.restoredAt = undefined;
+  subcategory.restoredBy = undefined;
+
+  // Eliminación lógica con auditoría y limpieza de campos de restore
   subcategory.isDeleted = true;
   subcategory.deletedAt = new Date();
   subcategory.deletedBy = new Types.ObjectId(currentUserId);
@@ -147,7 +189,8 @@ export const getSubcategoryByIdService = async (subcategoryId: string): Promise<
     .populate('category', 'name')
     .populate('createdBy', 'firstName lastName username')
     .populate('updatedBy', 'firstName lastName username')
-    .populate('deletedBy', 'firstName lastName username');
+    .populate('deletedBy', 'firstName lastName username')
+    .populate('restoredBy', 'firstName lastName username');
 
   if (!subcategory) throw new Error('Subcategoría no encontrada');
 
@@ -190,6 +233,7 @@ export const getSubcategoriesService = async (
   let subcategoriesQuery = Subcategory.find(filters)
     .populate('createdBy', 'firstName lastName username')
     .populate('updatedBy', 'firstName lastName username')
+    .populate('restoredBy', 'firstName lastName username')
     .populate('deletedBy', 'firstName lastName username');
 
   // Incluir categoría si se solicita

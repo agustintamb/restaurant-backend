@@ -5,6 +5,7 @@ import {
   deleteIngredientService,
   getIngredientByIdService,
   getIngredientsService,
+  restoreIngredientService,
 } from '@/services/ingredient.service';
 import getTokenFromRequest from '@/utils/getTokenFromRequest';
 
@@ -41,6 +42,20 @@ export const deleteIngredient = async (req: Request, res: Response) => {
     const token = getTokenFromRequest(req);
     const result = await deleteIngredientService(req.params.id, token);
     res.status(200).json(result);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Ha ocurrido un error';
+    res.status(400).json({ error: message });
+  }
+};
+
+export const restoreIngredient = async (req: Request, res: Response) => {
+  try {
+    const token = getTokenFromRequest(req);
+    const ingredient = await restoreIngredientService(req.params.id, token);
+    res.status(200).json({
+      message: 'Ingrediente restaurado exitosamente',
+      result: ingredient,
+    });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Ha ocurrido un error';
     res.status(400).json({ error: message });

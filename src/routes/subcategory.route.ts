@@ -5,6 +5,7 @@ import {
   createSubcategory,
   updateSubcategory,
   deleteSubcategory,
+  restoreSubcategory,
   getSubcategoryById,
   getSubcategories,
 } from '@/controllers/subcategory.controller';
@@ -19,5 +20,6 @@ router.get('/', getSubcategories);
 router.get('/:id', getSubcategoryById);
 router.put('/:id', updateSubcategory);
 router.delete('/:id', deleteSubcategory);
+router.patch('/:id/restore', restoreSubcategory);
 
 export default router;

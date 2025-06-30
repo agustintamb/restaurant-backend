@@ -5,6 +5,7 @@ import {
   createAllergen,
   updateAllergen,
   deleteAllergen,
+  restoreAllergen,
   getAllergenById,
   getAllergens,
 } from '@/controllers/allergen.controller';
@@ -19,5 +20,6 @@ router.get('/', getAllergens);
 router.get('/:id', getAllergenById);
 router.put('/:id', updateAllergen);
 router.delete('/:id', deleteAllergen);
+router.patch('/:id/restore', restoreAllergen);
 
 export default router;

@@ -5,6 +5,7 @@ import {
   deleteAllergenService,
   getAllergenByIdService,
   getAllergensService,
+  restoreAllergenService,
 } from '@/services/allergen.service';
 import getTokenFromRequest from '@/utils/getTokenFromRequest';
 
@@ -66,6 +67,20 @@ export const getAllergens = async (req: Request, res: Response) => {
     res.status(200).json({
       message: 'Lista de alérgenos obtenida exitosamente',
       result,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Ha ocurrido un error';
+    res.status(400).json({ error: message });
+  }
+};
+
+export const restoreAllergen = async (req: Request, res: Response) => {
+  try {
+    const token = getTokenFromRequest(req);
+    const allergen = await restoreAllergenService(req.params.id, token);
+    res.status(200).json({
+      message: 'Alérgeno restaurado exitosamente',
+      result: allergen,
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Ha ocurrido un error';
