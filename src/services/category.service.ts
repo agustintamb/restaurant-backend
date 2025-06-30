@@ -59,6 +59,30 @@ export const updateCategoryService = async (
   return category;
 };
 
+export const restoreCategoryService = async (
+  categoryId: string,
+  token: string
+): Promise<ICategory> => {
+  // Obtener el usuario que realiza la acción desde el token
+  const { id: currentUserId } = await validateTokenService(token);
+
+  if (!Types.ObjectId.isValid(categoryId)) {
+    throw new Error('ID de categoría inválido');
+  }
+
+  const category = await Category.findById(categoryId);
+  if (!category) throw new Error('Categoría no encontrada');
+  if (!category.isDeleted) throw new Error('La categoría no está eliminada');
+
+  // Restaurar con auditoría
+  category.isDeleted = false;
+  category.restoredAt = new Date();
+  category.restoredBy = new Types.ObjectId(currentUserId);
+
+  await category.save();
+  return category;
+};
+
 export const deleteCategoryService = async (
   categoryId: string,
   token: string
@@ -79,7 +103,11 @@ export const deleteCategoryService = async (
     throw new Error('No se puede eliminar una categoría que tiene subcategorías asociadas');
   }
 
-  // Eliminación lógica con auditoría
+  // Limpiar campos de restore si existían
+  category.restoredAt = undefined;
+  category.restoredBy = undefined;
+
+  // Eliminación lógica con auditoría y limpieza de campos de restore
   category.isDeleted = true;
   category.deletedAt = new Date();
   category.deletedBy = new Types.ObjectId(currentUserId);
@@ -98,7 +126,8 @@ export const getCategoryByIdService = async (categoryId: string): Promise<ICateg
     .populate('subcategories', 'name')
     .populate('createdBy', 'firstName lastName username')
     .populate('updatedBy', 'firstName lastName username')
-    .populate('deletedBy', 'firstName lastName username');
+    .populate('deletedBy', 'firstName lastName username')
+    .populate('restoredBy', 'firstName lastName username');
 
   if (!category) throw new Error('Categoría no encontrada');
 
@@ -133,6 +162,7 @@ export const getCategoriesService = async (
   let categoriesQuery = Category.find(filters)
     .populate('createdBy', 'firstName lastName username')
     .populate('updatedBy', 'firstName lastName username')
+    .populate('restoredBy', 'firstName lastName username')
     .populate('deletedBy', 'firstName lastName username');
 
   // Incluir subcategorías si se solicita

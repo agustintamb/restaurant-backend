@@ -25,6 +25,15 @@ const ingredientSchema = new Schema<IIngredient>(
       type: Date,
       required: false,
     },
+    restoredBy: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+      required: false,
+    },
+    restoredAt: {
+      type: Date,
+      required: false,
+    },
     isDeleted: {
       type: Boolean,
       default: false,
@@ -42,14 +51,19 @@ ingredientSchema.methods.softDelete = function (deletedBy?: Types.ObjectId) {
   if (deletedBy) {
     this.deletedBy = deletedBy;
   }
+  // Limpiar campos de restore
+  this.restoredAt = undefined;
+  this.restoredBy = undefined;
   return this.save();
 };
 
 // Método para restaurar un documento eliminado
-ingredientSchema.methods.restore = function () {
+ingredientSchema.methods.restore = function (restoredBy?: Types.ObjectId) {
   this.isDeleted = false;
-  this.deletedAt = undefined;
-  this.deletedBy = undefined;
+  this.restoredAt = new Date();
+  if (restoredBy) {
+    this.restoredBy = restoredBy;
+  }
   return this.save();
 };
 

@@ -5,6 +5,7 @@ import {
   deleteCategoryService,
   getCategoryByIdService,
   getCategoriesService,
+  restoreCategoryService,
 } from '@/services/category.service';
 import getTokenFromRequest from '@/utils/getTokenFromRequest';
 
@@ -41,6 +42,20 @@ export const deleteCategory = async (req: Request, res: Response) => {
     const token = getTokenFromRequest(req);
     const result = await deleteCategoryService(req.params.id, token);
     res.status(200).json(result);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Ha ocurrido un error';
+    res.status(400).json({ error: message });
+  }
+};
+
+export const restoreCategory = async (req: Request, res: Response) => {
+  try {
+    const token = getTokenFromRequest(req);
+    const category = await restoreCategoryService(req.params.id, token);
+    res.status(200).json({
+      message: 'Categoría restaurada exitosamente',
+      result: category,
+    });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Ha ocurrido un error';
     res.status(400).json({ error: message });

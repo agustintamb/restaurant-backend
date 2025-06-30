@@ -199,6 +199,28 @@ export const updateDishService = async (
   return dish;
 };
 
+export const restoreDishService = async (dishId: string, token: string): Promise<IDish> => {
+  // Obtener el usuario que realiza la acción desde el token
+  const { id: currentUserId } = await validateTokenService(token);
+
+  if (!Types.ObjectId.isValid(dishId)) {
+    throw new Error('ID de plato inválido');
+  }
+
+  const dish = await Dish.findById(dishId);
+  if (!dish) throw new Error('Plato no encontrado');
+  if (!dish.isDeleted) throw new Error('El plato no está eliminado');
+
+  // Restaurar con auditoría
+  dish.isDeleted = false;
+  dish.restoredAt = new Date();
+  dish.restoredBy = new Types.ObjectId(currentUserId);
+
+  await dish.save();
+  return dish;
+};
+
+// Actualizar el método deleteDishService para limpiar campos de restore
 export const deleteDishService = async (
   dishId: string,
   token: string
@@ -214,7 +236,11 @@ export const deleteDishService = async (
   if (!dish) throw new Error('Plato no encontrado');
   if (dish.isDeleted) throw new Error('El plato ya está eliminado');
 
-  // Eliminación lógica con auditoría
+  // Limpiar campos de restore si existían
+  dish.restoredAt = undefined;
+  dish.restoredBy = undefined;
+
+  // Eliminación lógica con auditoría y limpieza de campos de restore
   dish.isDeleted = true;
   dish.deletedAt = new Date();
   dish.deletedBy = new Types.ObjectId(currentUserId);
@@ -236,6 +262,7 @@ export const getDishByIdService = async (dishId: string): Promise<IDish> => {
     .populate('allergens', 'name')
     .populate('createdBy', 'firstName lastName username')
     .populate('updatedBy', 'firstName lastName username')
+    .populate('restoredBy', 'firstName lastName username')
     .populate('deletedBy', 'firstName lastName username');
 
   if (!dish) throw new Error('Plato no encontrado');
@@ -288,6 +315,7 @@ export const getDishesService = async (query: GetDishesQuery): Promise<Paginated
   let dishesQuery = Dish.find(filters)
     .populate('createdBy', 'firstName lastName username')
     .populate('updatedBy', 'firstName lastName username')
+    .populate('restoredBy', 'firstName lastName username')
     .populate('deletedBy', 'firstName lastName username');
 
   // Incluir relaciones si se solicita

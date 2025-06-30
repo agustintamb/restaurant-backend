@@ -5,6 +5,7 @@ import {
   deleteDishService,
   getDishByIdService,
   getDishesService,
+  restoreDishService,
 } from '@/services/dish.service';
 import { uploadDishImageService } from '@/services/upload.service';
 import parseArrayField from '@/utils/parseArrayField';
@@ -82,6 +83,21 @@ export const deleteDish = async (req: Request, res: Response) => {
     const result = await deleteDishService(req.params.id, token);
     res.status(200).json(result);
   } catch (error) {
+    const message = error instanceof Error ? error.message : 'Ha ocurrido un error';
+    res.status(400).json({ error: message });
+  }
+};
+
+export const restoreDish = async (req: Request, res: Response) => {
+  try {
+    const token = getTokenFromRequest(req);
+    const dish = await restoreDishService(req.params.id, token);
+    res.status(200).json({
+      message: 'Plato restaurado exitosamente',
+      result: dish,
+    });
+  } catch (error) {
+    console.error('Error restoring dish:', error);
     const message = error instanceof Error ? error.message : 'Ha ocurrido un error';
     res.status(400).json({ error: message });
   }

@@ -50,6 +50,15 @@ const dishSchema = new Schema<IDish>(
       type: Date,
       required: false,
     },
+    restoredBy: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+      required: false,
+    },
+    restoredAt: {
+      type: Date,
+      required: false,
+    },
     isDeleted: {
       type: Boolean,
       default: false,
@@ -73,14 +82,19 @@ dishSchema.methods.softDelete = function (deletedBy?: Types.ObjectId) {
   if (deletedBy) {
     this.deletedBy = deletedBy;
   }
+  // Limpiar campos de restore
+  this.restoredAt = undefined;
+  this.restoredBy = undefined;
   return this.save();
 };
 
 // Método para restaurar un documento eliminado
-dishSchema.methods.restore = function () {
+dishSchema.methods.restore = function (restoredBy?: Types.ObjectId) {
   this.isDeleted = false;
-  this.deletedAt = undefined;
-  this.deletedBy = undefined;
+  this.restoredAt = new Date();
+  if (restoredBy) {
+    this.restoredBy = restoredBy;
+  }
   return this.save();
 };
 

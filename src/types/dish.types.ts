@@ -14,6 +14,8 @@ export interface IDish extends Document {
   updatedBy?: Types.ObjectId;
   deletedBy?: Types.ObjectId;
   deletedAt?: Date;
+  restoredBy?: Types.ObjectId;
+  restoredAt?: Date;
   isDeleted: boolean;
 }
 

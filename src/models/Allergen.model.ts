@@ -25,6 +25,15 @@ const allergenSchema = new Schema<IAllergen>(
       type: Date,
       required: false,
     },
+    restoredBy: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+      required: false,
+    },
+    restoredAt: {
+      type: Date,
+      required: false,
+    },
     isDeleted: {
       type: Boolean,
       default: false,
@@ -46,10 +55,12 @@ allergenSchema.methods.softDelete = function (deletedBy?: Types.ObjectId) {
 };
 
 // Método para restaurar un documento eliminado
-allergenSchema.methods.restore = function () {
+allergenSchema.methods.restore = function (restoredBy?: Types.ObjectId) {
   this.isDeleted = false;
-  this.deletedAt = undefined;
-  this.deletedBy = undefined;
+  this.restoredAt = new Date();
+  if (restoredBy) {
+    this.restoredBy = restoredBy;
+  }
   return this.save();
 };
 

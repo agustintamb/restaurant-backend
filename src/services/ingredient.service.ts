@@ -59,6 +59,30 @@ export const updateIngredientService = async (
   return ingredient;
 };
 
+export const restoreIngredientService = async (
+  ingredientId: string,
+  token: string
+): Promise<IIngredient> => {
+  // Obtener el usuario que realiza la acción desde el token
+  const { id: currentUserId } = await validateTokenService(token);
+
+  if (!Types.ObjectId.isValid(ingredientId)) {
+    throw new Error('ID de ingrediente inválido');
+  }
+
+  const ingredient = await Ingredient.findById(ingredientId);
+  if (!ingredient) throw new Error('Ingrediente no encontrado');
+  if (!ingredient.isDeleted) throw new Error('El ingrediente no está eliminado');
+
+  // Restaurar con auditoría
+  ingredient.isDeleted = false;
+  ingredient.restoredAt = new Date();
+  ingredient.restoredBy = new Types.ObjectId(currentUserId);
+
+  await ingredient.save();
+  return ingredient;
+};
+
 export const deleteIngredientService = async (
   ingredientId: string,
   token: string
@@ -74,10 +98,14 @@ export const deleteIngredientService = async (
   if (!ingredient) throw new Error('Ingrediente no encontrado');
   if (ingredient.isDeleted) throw new Error('El ingrediente ya está eliminado');
 
-  // Eliminación lógica con auditoría
+  // Limpiar campos de restore si existían
+  ingredient.restoredAt = undefined;
+  ingredient.restoredBy = undefined;
+
+  // Eliminación lógica con auditoría y limpieza de campos de restore
   ingredient.isDeleted = true;
   ingredient.deletedAt = new Date();
-  ingredient.deletedBy = new Types.ObjectId(currentUserId); // Usuario que elimina
+  ingredient.deletedBy = new Types.ObjectId(currentUserId);
 
   await ingredient.save();
 
@@ -124,6 +152,7 @@ export const getIngredientsService = async (
       .populate('createdBy', 'firstName lastName username')
       .populate('updatedBy', 'firstName lastName username')
       .populate('deletedBy', 'firstName lastName username')
+      .populate('restoredBy', 'firstName lastName username')
       .skip(skip)
       .limit(limit)
       .sort({ createdAt: -1 }),
