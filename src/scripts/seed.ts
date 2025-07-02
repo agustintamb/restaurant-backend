@@ -1,12 +1,24 @@
+import {
+  SAMPLE_ALLERGENS,
+  SAMPLE_CATEGORIES,
+  SAMPLE_DISHES,
+  SAMPLE_INGREDIENTS,
+  SAMPLE_USERS,
+} from '@/mocks/mockData';
+import * as fs from 'fs';
+import * as path from 'path';
 import mongoose from 'mongoose';
 import readline from 'readline';
 import { CONFIG } from '@/config/env.config';
 import { User } from '@/models/User.model';
+import { ICreateDish } from '@/types/dish.types';
 import { createAllergenService } from '@/services/allergen.service';
 import { createIngredientService } from '@/services/ingredient.service';
 import { createCategoryService } from '@/services/category.service';
 import { createSubcategoryService } from '@/services/subcategory.service';
 import { loginService } from '@/services/auth.service';
+import { createDishService } from '@/services/dish.service';
+import { uploadToCloudinary } from '@/services/cloudinary.service';
 
 // Crear interfaz para input del usuario
 const rl = readline.createInterface({
@@ -78,12 +90,13 @@ const requestUserConfirmation = async (collections: any[]): Promise<void> => {
   }
 
   console.log('   - 5 usuarios administradores');
-  console.log(`   - ${ALLERGENS.length} alérgenos`);
-  console.log(`   - ${INGREDIENTS.length} ingredientes`);
-  console.log(`   - ${CATEGORIES_DATA.length} categorías`);
+  console.log(`   - ${SAMPLE_ALLERGENS.length} alérgenos`);
+  console.log(`   - ${SAMPLE_INGREDIENTS.length} ingredientes`);
+  console.log(`   - ${SAMPLE_CATEGORIES.length} categorías`);
   console.log(
-    `   - ${CATEGORIES_DATA.reduce((total, cat) => total + (cat.subcategories?.length || 0), 0)} subcategorías`
+    `   - ${SAMPLE_CATEGORIES.reduce((total, cat) => total + (cat.subcategories?.length || 0), 0)} subcategorías`
   );
+  console.log(`   - ${SAMPLE_DISHES.length} platos con imágenes`);
 
   const confirmed = await askConfirmation('¿Quieres continuar?');
 
@@ -133,209 +146,260 @@ const cleanCollectionsIndividually = async (collections: any[]): Promise<void> =
 };
 
 /**
- * Datos de prueba para usuarios
+ * Subir imagen a Cloudinary desde el directorio de assets
  */
-const SAMPLE_USERS = [
-  {
-    username: 'admin@mail.com',
-    password: 'admin123',
-    firstName: 'Usuario',
-    lastName: 'Administrador',
-    phone: '1123456789',
-    role: 'admin' as const,
-  },
-  {
-    username: 'carlos@mail.com',
-    password: 'carlos123',
-    firstName: 'Carlos',
-    lastName: 'García',
-    phone: '1134567890',
-    role: 'admin' as const,
-  },
-  {
-    username: 'maria@mail.com',
-    password: 'maria123',
-    firstName: 'María',
-    lastName: 'Rodríguez',
-    phone: '1145678901',
-    role: 'admin' as const,
-  },
-  {
-    username: 'juan@mail.com',
-    password: 'juan123',
-    firstName: 'Juan',
-    lastName: 'López',
-    phone: '1156789012',
-    role: 'admin' as const,
-  },
-  {
-    username: 'ana@mail.com',
-    password: 'ana123',
-    firstName: 'Ana',
-    lastName: 'Martínez',
-    phone: '1167890123',
-    role: 'admin' as const,
-  },
-];
+const uploadImageToCloudinary = async (imageName: string): Promise<string> => {
+  try {
+    const imagePath = path.join(process.cwd(), 'src', 'assets', 'images', imageName);
+
+    // Verificar si el archivo existe
+    if (!fs.existsSync(imagePath)) {
+      console.log(`     ⚠️  Imagen no encontrada: ${imageName}, usando placeholder`);
+      return 'https://placehold.co/600x400?text=Sin+Imagen';
+    }
+
+    // Leer el archivo como buffer
+    const imageBuffer = fs.readFileSync(imagePath);
+
+    // Obtener el nombre sin extensión para usar como public_id
+    const publicId = path.parse(imageName).name;
+
+    // Subir a Cloudinary
+    const result = await uploadToCloudinary(imageBuffer, {
+      folder: 'bodegon/dishes',
+      public_id: publicId,
+      resource_type: 'image',
+    });
+
+    console.log(`     ✅ Imagen subida: ${imageName} → ${result.secure_url}`);
+    return result.secure_url;
+  } catch (error) {
+    console.error(`     ❌ Error subiendo imagen ${imageName}:`, error);
+    return 'https://placehold.co/600x400?text=Error+Imagen';
+  }
+};
 
 /**
- * Datos de alérgenos
+ * Buscar entidad por nombre y retornar su ID
  */
-const ALLERGENS = ['Gluten', 'Huevo', 'Lácteos', 'Moluscos', 'Pescado', 'Frutos secos', 'Sulfitos'];
+const findEntityByName = async (
+  model: any,
+  name: string,
+  entityType: string
+): Promise<string | null> => {
+  try {
+    const entity = await model.findOne({
+      name: name.trim(),
+      isDeleted: { $ne: true },
+    });
+
+    if (!entity) {
+      console.log(`     ⚠️  ${entityType} no encontrado: "${name}"`);
+      return null;
+    }
+
+    return (entity._id as mongoose.Types.ObjectId).toString();
+  } catch (error) {
+    console.error(`     ❌ Error buscando ${entityType} "${name}":`, error);
+    return null;
+  }
+};
 
 /**
- * Datos de categorías y subcategorías
+ * Mapear ingredientes de nombres a IDs
  */
-const CATEGORIES_DATA = [
-  {
-    name: 'Entrantes',
-  },
-  {
-    name: 'Ensaladas',
-  },
-  {
-    name: 'Platos Principales',
-    subcategories: [
-      {
-        name: 'Carnes Rojas',
-      },
-      {
-        name: 'Carnes Blancas',
-      },
-      {
-        name: 'Pescados',
-      },
-    ],
-  },
-  {
-    name: 'Pastas',
-  },
-  {
-    name: 'Postres',
-  },
-  {
-    name: 'Bebidas Alcohólicas',
-  },
-  {
-    name: 'Bebidas sin Alcohol',
-  },
-];
+const mapIngredientsToIds = async (ingredientNames: string[]): Promise<string[]> => {
+  const ingredientIds: string[] = [];
+
+  for (const ingredientName of ingredientNames) {
+    const ingredientId = await findEntityByName(
+      mongoose.model('Ingredient'),
+      ingredientName,
+      'Ingrediente'
+    );
+
+    if (ingredientId) {
+      ingredientIds.push(ingredientId);
+    }
+  }
+
+  return ingredientIds;
+};
 
 /**
- * Datos de ingredientes
+ * Mapear alérgenos de nombres a IDs
  */
-const INGREDIENTS = [
-  'Carne picada',
-  'Cebolla',
-  'Huevo duro',
-  'Aceitunas',
-  'Especias',
-  'Queso provolone',
-  'Orégano',
-  'Aceite de oliva',
-  'Pimienta',
-  'Sal',
-  'Matambre',
-  'Salsa de tomate',
-  'Queso mozzarella',
-  'Jamón crudo',
-  'Salamín',
-  'Queso azul',
-  'Pan casero',
-  'Calamar',
-  'Harina',
-  'Huevo',
-  'Limón',
-  'Perejil',
-  'Ajo',
-  'Mollejas',
-  'Sal gruesa',
-  'Carne de cerdo',
-  'Carne vacuna',
-  'Pimiento morrón',
-  'Atún',
-  'Mayonesa',
-  'Tomate',
-  'Lechuga',
-  'Zanahoria',
-  'Arvejas',
-  'Rúcula',
-  'Queso',
-  'Lechuga romana',
-  'Pollo',
-  'Crutones',
-  'Queso parmesano',
-  'Aderezo Caesar',
-  'Manzana',
-  'Apio',
-  'Nueces',
-  'Pasas',
-  'Bife de chorizo',
-  'Carne de ternera',
-  'Pan rallado',
-  'Papas',
-  'Matambre de cerdo',
-  'Chimichurri',
-  'Asado de tira',
-  'Entraña',
-  'Lomo',
-  'Jamón',
-  'Colita de cuadril',
-  'Romero',
-  'Vacío',
-  'Chorizo',
-  'Morcilla',
-  'Riñones',
-  'Tomillo',
-  'Pechuga de pollo',
-  'Banana',
-  'Maíz',
-  'Leche',
-  'Manteca',
-  'Champiñones',
-  'Crema',
-  'Vino blanco',
-  'Merluza',
-  'Salmón',
-  'Eneldo',
-  'Abadejo',
-  'Trucha',
-  'Almendras',
-  'Papa',
-  'Albahaca',
-  'Ricota',
-  'Espinaca',
-  'Nuez moscada',
-  'Pasta',
-  'Salsa blanca',
-  'Bechamel',
-  'Azúcar',
-  'Dulce de leche',
-  'Saborizantes naturales',
-  'Vainillas',
-  'Café',
-  'Queso mascarpone',
-  'Cacao',
-  'Uva Malbec',
-  'Uva Cabernet Sauvignon',
-  'Agua',
-  'Malta',
-  'Lúpulo',
-  'Levadura',
-  'Uva Torrontés',
-  'Uva Chardonnay',
-  'Fernet Branca',
-  'Gaseosa cola',
-  'Hielo',
-  'Malta tostada',
-  'Agua mineral',
-  'Agua carbonatada',
-  'Jarabe de fructosa',
-  'Saborizantes',
-  'Menta',
-  'Jengibre',
-  'Frutas de estación',
-];
+const mapAllergensToIds = async (allergenNames: string[]): Promise<string[]> => {
+  const allergenIds: string[] = [];
+
+  for (const allergenName of allergenNames) {
+    const allergenId = await findEntityByName(mongoose.model('Allergen'), allergenName, 'Alérgeno');
+
+    if (allergenId) {
+      allergenIds.push(allergenId);
+    }
+  }
+
+  return allergenIds;
+};
+
+/**
+ * Buscar categoría por nombre
+ */
+const findCategoryByName = async (categoryName: string): Promise<string | null> => {
+  return await findEntityByName(mongoose.model('Category'), categoryName, 'Categoría');
+};
+
+/**
+ * Buscar subcategoría por nombre y categoría
+ */
+const findSubcategoryByName = async (
+  subcategoryName: string,
+  categoryId: string
+): Promise<string | null> => {
+  try {
+    const subcategory = await mongoose.model('Subcategory').findOne({
+      name: subcategoryName.trim(),
+      category: categoryId,
+      isDeleted: { $ne: true },
+    });
+
+    if (!subcategory) {
+      console.log(`     ⚠️  Subcategoría no encontrada: "${subcategoryName}"`);
+      return null;
+    }
+
+    return (subcategory._id as mongoose.Types.ObjectId).toString();
+  } catch (error) {
+    console.error(`     ❌ Error buscando subcategoría "${subcategoryName}":`, error);
+    return null;
+  }
+};
+
+/**
+ * Crear un dish individual
+ */
+const createSingleDish = async (dishData: any, adminToken: string): Promise<boolean> => {
+  try {
+    console.log(`   🍽️  Creando plato: ${dishData.name}`);
+
+    // 1. Buscar categoría
+    const categoryId = await findCategoryByName(dishData.categoryName);
+    if (!categoryId) {
+      console.log(`     ❌ Categoría no encontrada: ${dishData.categoryName}`);
+      return false;
+    }
+
+    // 2. Buscar subcategoría si existe
+    let subcategoryId: string | undefined = undefined;
+    if (dishData.subcategoryName) {
+      const foundSubcategoryId = await findSubcategoryByName(dishData.subcategoryName, categoryId);
+      if (foundSubcategoryId) {
+        subcategoryId = foundSubcategoryId;
+      } else {
+        console.log(`     ⚠️  Subcategoría no encontrada: ${dishData.subcategoryName}`);
+      }
+    }
+
+    // 3. Mapear ingredientes a IDs
+    const ingredientIds = await mapIngredientsToIds(dishData.ingredientes || []);
+    if ((dishData.ingredientes || []).length > 0 && ingredientIds.length === 0) {
+      console.log(`     ⚠️  No se encontraron ingredientes para: ${dishData.name}`);
+    }
+
+    // 4. Mapear alérgenos a IDs
+    const allergenIds = await mapAllergensToIds(dishData.alergenos || []);
+    if ((dishData.alergenos || []).length > 0 && allergenIds.length === 0) {
+      console.log(`     ⚠️  No se encontraron alérgenos para: ${dishData.name}`);
+    }
+
+    // 5. Subir imagen a Cloudinary
+    const imageUrl = await uploadImageToCloudinary(dishData.img);
+
+    // 6. Preparar datos para el servicio
+    const createDishData: ICreateDish = {
+      name: dishData.name,
+      description: dishData.description,
+      price: dishData.precio,
+      image: imageUrl,
+      categoryId: categoryId,
+      subcategoryId: subcategoryId,
+      ingredientIds: ingredientIds,
+      allergenIds: allergenIds,
+    };
+
+    // 7. Crear el dish usando el servicio
+    const createdDish = await createDishService(createDishData, adminToken);
+
+    console.log(`     ✅ Plato creado exitosamente: ${dishData.name}`);
+    console.log(`        - Categoría: ${dishData.categoryName}`);
+    if (dishData.subcategoryName) {
+      console.log(`        - Subcategoría: ${dishData.subcategoryName}`);
+    }
+    console.log(`        - Ingredientes: ${ingredientIds.length}`);
+    console.log(`        - Alérgenos: ${allergenIds.length}`);
+    console.log(`        - Precio: $${dishData.precio}`);
+
+    return true;
+  } catch (error) {
+    console.error(`     ❌ Error creando plato "${dishData.name}":`, error);
+    return false;
+  }
+};
+
+/**
+ * Crear todos los dishes de prueba
+ */
+const createSampleDishes = async (adminToken: string): Promise<void> => {
+  console.log('\n🍽️  Creando platos de prueba...');
+
+  let createdCount = 0;
+  let errorCount = 0;
+  const totalDishes = SAMPLE_DISHES.length;
+
+  console.log(`📊 Total de platos a crear: ${totalDishes}`);
+
+  // Crear dishes por categorías para mejor organización en los logs
+  const dishesByCategory = SAMPLE_DISHES.reduce(
+    (acc, dish) => {
+      const category = dish.categoryName;
+      if (!acc[category]) {
+        acc[category] = [];
+      }
+      acc[category].push(dish);
+      return acc;
+    },
+    {} as Record<string, any[]>
+  );
+
+  for (const [categoryName, dishes] of Object.entries(dishesByCategory)) {
+    console.log(`\n📂 Creando platos de categoría: ${categoryName} (${dishes.length} platos)`);
+
+    for (const dishData of dishes) {
+      const success = await createSingleDish(dishData, adminToken);
+
+      if (success) {
+        createdCount++;
+      } else {
+        errorCount++;
+      }
+
+      // Pequeña pausa para no sobrecargar el sistema
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+  }
+
+  console.log(`\n📊 Resumen de creación de platos:`);
+  console.log(`✅ Platos creados exitosamente: ${createdCount}`);
+  if (errorCount > 0) {
+    console.log(`❌ Platos con errores: ${errorCount}`);
+  }
+  console.log(`📊 Total procesado: ${createdCount + errorCount}/${totalDishes}`);
+
+  if (createdCount > 0) {
+    console.log(`✅ ${createdCount} platos creados exitosamente`);
+  }
+};
 
 /**
  * Crear usuarios de prueba
@@ -369,7 +433,7 @@ const createSampleAllergens = async (adminToken: string): Promise<void> => {
   console.log('\n🚨 Creando alérgenos de prueba...');
   let createdCount = 0;
 
-  for (const allergenName of ALLERGENS) {
+  for (const allergenName of SAMPLE_ALLERGENS) {
     try {
       await createAllergenService({ name: allergenName }, adminToken);
       console.log(`   ✅ Alérgeno creado: ${allergenName}`);
@@ -389,7 +453,7 @@ const createSampleIngredients = async (adminToken: string): Promise<void> => {
   console.log('\n🥘 Creando ingredientes de prueba...');
   let createdCount = 0;
 
-  for (const ingredientName of INGREDIENTS) {
+  for (const ingredientName of SAMPLE_INGREDIENTS) {
     try {
       await createIngredientService({ name: ingredientName }, adminToken);
       console.log(`   ✅ Ingrediente creado: ${ingredientName}`);
@@ -410,7 +474,7 @@ const createSampleCategories = async (adminToken: string): Promise<void> => {
   let createdCategoriesCount = 0;
   let createdSubcategoriesCount = 0;
 
-  for (const categoryData of CATEGORIES_DATA) {
+  for (const categoryData of SAMPLE_CATEGORIES) {
     try {
       // Crear la categoría
       const category = await createCategoryService({ name: categoryData.name }, adminToken);
@@ -474,7 +538,8 @@ const generateAdminToken = async (adminUserId: string): Promise<string> => {
  */
 const verifySeedResult = async (): Promise<void> => {
   const userCount = await User.countDocuments();
-  const totalSubcategories = CATEGORIES_DATA.reduce(
+  const dishCount = await mongoose.model('Dish').countDocuments();
+  const totalSubcategories = SAMPLE_CATEGORIES.reduce(
     (total, cat) => total + (cat.subcategories?.length || 0),
     0
   );
@@ -482,10 +547,11 @@ const verifySeedResult = async (): Promise<void> => {
   console.log('');
   console.log('🌱 ¡DATOS DE PRUEBA INSERTADOS EXITOSAMENTE!');
   console.log(`✅ ${userCount} usuarios en la base de datos`);
-  console.log(`✅ ${ALLERGENS.length} alérgenos creados`);
-  console.log(`✅ ${INGREDIENTS.length} ingredientes creados`);
-  console.log(`✅ ${CATEGORIES_DATA.length} categorías creadas`);
+  console.log(`✅ ${SAMPLE_ALLERGENS.length} alérgenos creados`);
+  console.log(`✅ ${SAMPLE_INGREDIENTS.length} ingredientes creados`);
+  console.log(`✅ ${SAMPLE_CATEGORIES.length} categorías creadas`);
   console.log(`✅ ${totalSubcategories} subcategorías creadas`);
+  console.log(`✅ ${dishCount} platos creados`);
 
   console.log('📧 Usuarios de prueba disponibles:');
   SAMPLE_USERS.forEach(user => {
@@ -539,7 +605,10 @@ const seed = async (): Promise<void> => {
     // 10. Crear categorías y subcategorías usando los servicios
     await createSampleCategories(adminToken);
 
-    // 11. Verificar resultado
+    // 11. Crear platos usando el servicio
+    await createSampleDishes(adminToken);
+
+    // 12. Verificar resultado
     await verifySeedResult();
   } catch (error) {
     console.error('❌ Error durante la inserción de datos:', error);

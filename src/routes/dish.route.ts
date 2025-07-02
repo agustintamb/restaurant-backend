@@ -13,15 +13,16 @@ import { uploadMiddleware } from '@/utils/upload';
 
 const router = Router();
 
-// Todas las rutas de platos requieren autenticación y rol admin
+router.get('/', getDishes);
+router.get('/:id', getDishById);
+
+// Todas las siguientes rutas requieren autenticación y rol admin
 router.use(authenticateToken, requireAdmin);
 
 // with uploadMiddleware
 router.post('/', uploadMiddleware, createDish);
 router.put('/:id', uploadMiddleware, updateDish);
 
-router.get('/', getDishes);
-router.get('/:id', getDishById);
 router.delete('/:id', deleteDish);
 router.patch('/:id/restore', restoreDish);
 

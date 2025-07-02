@@ -10,7 +10,7 @@ export const uploadDishImageService = async (
     const publicId = dishId ? `dish-${dishId}` : `dish-${Date.now()}`;
 
     const result: UploadApiResponse = await uploadToCloudinary(buffer, {
-      folder: 'restaurant/dishes',
+      folder: 'bodegon/dishes',
       public_id: publicId,
       resource_type: 'image',
     });

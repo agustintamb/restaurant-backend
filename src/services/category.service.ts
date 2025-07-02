@@ -1,4 +1,5 @@
 import { Category } from '@/models/Category.model';
+import { Dish } from '@/models/Dish.model';
 import { Types } from 'mongoose';
 import {
   ICreateCategory,
@@ -102,6 +103,10 @@ export const deleteCategoryService = async (
   if (category.subcategories && category.subcategories.length > 0) {
     throw new Error('No se puede eliminar una categoría que tiene subcategorías asociadas');
   }
+
+  const dishCount = await Dish.countDocuments({ subcategory: category._id });
+  if (dishCount > 0)
+    throw new Error('No se puede eliminar la categoría porque está asignada a uno o más platos');
 
   // Limpiar campos de restore si existían
   category.restoredAt = undefined;
