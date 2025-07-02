@@ -12,11 +12,12 @@ import {
 
 const router = Router();
 
-// Todas las rutas de categorías requieren autenticación y rol admin
+router.get('/', getCategories);
+
+// Todas las siguientes rutas requieren autenticación y rol admin
 router.use(authenticateToken, requireAdmin);
 
 router.post('/', createCategory);
-router.get('/', getCategories);
 router.get('/:id', getCategoryById);
 router.put('/:id', updateCategory);
 router.delete('/:id', deleteCategory);

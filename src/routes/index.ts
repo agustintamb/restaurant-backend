@@ -6,6 +6,7 @@ import ingredientRoutes from './ingredient.route';
 import categoryRoutes from './category.route';
 import subcategoryRoutes from './subcategory.route';
 import dishRoutes from './dish.route';
+import dashboardRoutes from './dashboard.route';
 
 const router = Router();
 
@@ -16,5 +17,6 @@ router.use('/ingredients', ingredientRoutes);
 router.use('/categories', categoryRoutes);
 router.use('/subcategories', subcategoryRoutes);
 router.use('/dishes', dishRoutes);
+router.use('/dashboard', dashboardRoutes);
 
 export default router;
