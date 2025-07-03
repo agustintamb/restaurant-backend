@@ -2,7 +2,8 @@ import { Types, Document } from 'mongoose';
 
 export interface ISubcategory extends Document {
   name: string;
-  category: Types.ObjectId; // Referencia a la categoría padre
+  nameSlug: string;
+  category: Types.ObjectId;
   createdBy?: Types.ObjectId;
   createdAt: Date;
   updatedBy?: Types.ObjectId;
@@ -15,12 +16,14 @@ export interface ISubcategory extends Document {
 
 export interface ICreateSubcategory {
   name: string;
-  categoryId: string; // ID de la categoría padre
+  nameSlug?: string;
+  categoryId: string;
   createdBy?: string;
 }
 
 export interface IUpdateSubcategory {
   name?: string;
+  nameSlug?: string;
   categoryId?: string;
   updatedBy?: string;
 }
@@ -29,9 +32,9 @@ export interface GetSubcategoriesQuery {
   page?: string;
   limit?: string;
   search?: string;
-  categoryId?: string; // Para filtrar por categoría
+  categoryId?: string;
   includeDeleted?: string;
-  includeCategory?: string; // Para incluir la categoría en el populate
+  includeCategory?: string;
 }
 
 export interface PaginatedSubcategoriesResult {

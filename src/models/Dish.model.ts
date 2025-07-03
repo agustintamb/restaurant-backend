@@ -1,9 +1,11 @@
 import { Schema, model, Types } from 'mongoose';
 import { IDish } from '@/types/dish.types';
+import { generateSlug } from '@/utils/slug';
 
 const dishSchema = new Schema<IDish>(
   {
     name: { type: String, required: true },
+    nameSlug: { type: String, required: true },
     description: { type: String, required: true },
     price: { type: Number, required: true, min: 0 },
     image: { type: String, default: 'https://placehold.co/600x400' },
@@ -69,8 +71,18 @@ const dishSchema = new Schema<IDish>(
   }
 );
 
+// Middleware para generar nameSlug automáticamente antes de guardar
+dishSchema.pre('save', function (next) {
+  // Solo generar slug si el name ha cambiado o es un documento nuevo
+  if (this.isModified('name') || this.isNew) {
+    this.nameSlug = generateSlug(this.name);
+  }
+  next();
+});
+
 // Índices para mejorar las consultas
 dishSchema.index({ name: 1 });
+dishSchema.index({ nameSlug: 1 });
 dishSchema.index({ category: 1 });
 dishSchema.index({ subcategory: 1 });
 dishSchema.index({ price: 1 });

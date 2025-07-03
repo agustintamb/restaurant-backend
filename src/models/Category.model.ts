@@ -1,10 +1,11 @@
-// Actualización del modelo Category.model.ts
 import { Schema, model, Types } from 'mongoose';
 import { ICategory } from '@/types/category.types';
+import { generateSlug } from '@/utils/slug';
 
 const categorySchema = new Schema<ICategory>(
   {
     name: { type: String, required: true, unique: true },
+    nameSlug: { type: String, required: true, unique: true },
     subcategories: [
       {
         type: Schema.Types.ObjectId,
@@ -50,6 +51,17 @@ const categorySchema = new Schema<ICategory>(
     timestamps: true,
   }
 );
+
+// Middleware para generar nameSlug automáticamente antes de guardar
+categorySchema.pre('save', function (next) {
+  if (this.isModified('name') || this.isNew) {
+    this.nameSlug = generateSlug(this.name);
+  }
+  next();
+});
+
+// Índice para el slug
+categorySchema.index({ nameSlug: 1 });
 
 // Método para eliminación lógica
 categorySchema.methods.softDelete = function (deletedBy?: Types.ObjectId) {

@@ -9,6 +9,7 @@ import {
   IUpdateCategory,
 } from '@/types/category.types';
 import { validateTokenService } from './auth.service';
+import { generateSlug } from '@/utils/slug';
 
 export const createCategoryService = async (
   categoryData: ICreateCategory,
@@ -20,8 +21,16 @@ export const createCategoryService = async (
   const existingCategory = await Category.findOne({ name: categoryData.name });
   if (existingCategory) throw new Error('La categoría ya existe');
 
+  // Generar nameSlug si no se proporciona
+  const nameSlug = categoryData.nameSlug || generateSlug(categoryData.name);
+
+  // Verificar que el slug no exista
+  const existingSlug = await Category.findOne({ nameSlug });
+  if (existingSlug) throw new Error('Ya existe una categoría con ese slug');
+
   const category = new Category({
     name: categoryData.name,
+    nameSlug,
     createdBy: new Types.ObjectId(currentUserId),
   });
 
@@ -46,12 +55,25 @@ export const updateCategoryService = async (
 
   // Verificar si el nombre ya existe (si se está actualizando)
   if (updateData.name && updateData.name !== category.name) {
-    const existingCategory = await Category.findOne({ name: updateData.name });
+    const existingCategory = await Category.findOne({
+      name: updateData.name,
+      _id: { $ne: categoryId },
+    });
     if (existingCategory) throw new Error('El nombre de la categoría ya existe');
+  }
+
+  // Verificar slug si se proporciona explícitamente
+  if (updateData.nameSlug) {
+    const existingSlug = await Category.findOne({
+      nameSlug: updateData.nameSlug,
+      _id: { $ne: categoryId },
+    });
+    if (existingSlug) throw new Error('Ya existe una categoría con ese slug');
   }
 
   // Actualizar campos
   if (updateData.name) category.name = updateData.name;
+  if (updateData.nameSlug) category.nameSlug = updateData.nameSlug;
 
   // Establecer automáticamente el usuario que modifica
   category.updatedBy = new Types.ObjectId(currentUserId);
@@ -104,7 +126,7 @@ export const deleteCategoryService = async (
     throw new Error('No se puede eliminar una categoría que tiene subcategorías asociadas');
   }
 
-  const dishCount = await Dish.countDocuments({ subcategory: category._id });
+  const dishCount = await Dish.countDocuments({ category: category._id });
   if (dishCount > 0)
     throw new Error('No se puede eliminar la categoría porque está asignada a uno o más platos');
 
@@ -128,7 +150,7 @@ export const getCategoryByIdService = async (categoryId: string): Promise<ICateg
   if (!Types.ObjectId.isValid(categoryId)) throw new Error('ID de categoría inválido');
 
   const category = await Category.findById(categoryId)
-    .populate('subcategories', 'name')
+    .populate('subcategories', 'name nameSlug')
     .populate('createdBy', 'firstName lastName username')
     .populate('updatedBy', 'firstName lastName username')
     .populate('deletedBy', 'firstName lastName username')
@@ -152,7 +174,10 @@ export const getCategoriesService = async (
   const filters: any = {};
 
   if (search) {
-    filters.name = { $regex: search, $options: 'i' };
+    filters.$or = [
+      { name: { $regex: search, $options: 'i' } },
+      { nameSlug: { $regex: search, $options: 'i' } },
+    ];
   }
 
   // No incluir eliminados por defecto
@@ -172,7 +197,7 @@ export const getCategoriesService = async (
 
   // Incluir subcategorías si se solicita
   if (includeSubcategories) {
-    categoriesQuery = categoriesQuery.populate('subcategories', 'name');
+    categoriesQuery = categoriesQuery.populate('subcategories', 'name nameSlug');
   }
 
   // Ejecutar consultas

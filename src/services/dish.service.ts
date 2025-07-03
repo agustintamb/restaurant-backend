@@ -12,6 +12,7 @@ import {
   IUpdateDish,
 } from '@/types/dish.types';
 import { validateTokenService } from './auth.service';
+import { generateSlug } from '@/utils/slug';
 
 export const createDishService = async (dishData: ICreateDish, token: string): Promise<IDish> => {
   // Obtener el usuario que realiza la acción desde el token
@@ -78,8 +79,16 @@ export const createDishService = async (dishData: ICreateDish, token: string): P
     }
   }
 
+  // Generar nameSlug si no se proporciona
+  const nameSlug = dishData.nameSlug || generateSlug(dishData.name);
+
+  // Verificar que el slug no exista
+  const existingSlug = await Dish.findOne({ nameSlug });
+  if (existingSlug) throw new Error('Ya existe un plato con ese slug');
+
   const dish = new Dish({
     name: dishData.name,
+    nameSlug,
     description: dishData.description,
     price: dishData.price,
     image: dishData.image || 'placeholder-dish.jpg',
@@ -186,6 +195,16 @@ export const updateDishService = async (
     dish.allergens = allergenIds;
   }
 
+  // Verificar slug si se proporciona explícitamente
+  if (updateData.nameSlug) {
+    const existingSlug = await Dish.findOne({
+      nameSlug: updateData.nameSlug,
+      _id: { $ne: dishId },
+    });
+    if (existingSlug) throw new Error('Ya existe un plato con ese slug');
+    dish.nameSlug = updateData.nameSlug;
+  }
+
   // Actualizar otros campos
   if (updateData.name) dish.name = updateData.name;
   if (updateData.description) dish.description = updateData.description;
@@ -220,7 +239,6 @@ export const restoreDishService = async (dishId: string, token: string): Promise
   return dish;
 };
 
-// Actualizar el método deleteDishService para limpiar campos de restore
 export const deleteDishService = async (
   dishId: string,
   token: string
@@ -256,8 +274,8 @@ export const getDishByIdService = async (dishId: string): Promise<IDish> => {
   if (!Types.ObjectId.isValid(dishId)) throw new Error('ID de plato inválido');
 
   const dish = await Dish.findById(dishId)
-    .populate('category', 'name')
-    .populate('subcategory', 'name')
+    .populate('category', 'name nameSlug')
+    .populate('subcategory', 'name nameSlug')
     .populate('ingredients', 'name')
     .populate('allergens', 'name')
     .populate('createdBy', 'firstName lastName username')
@@ -285,6 +303,7 @@ export const getDishesService = async (query: GetDishesQuery): Promise<Paginated
   if (search) {
     filters.$or = [
       { name: { $regex: search, $options: 'i' } },
+      { nameSlug: { $regex: search, $options: 'i' } },
       { description: { $regex: search, $options: 'i' } },
     ];
   }
@@ -321,8 +340,8 @@ export const getDishesService = async (query: GetDishesQuery): Promise<Paginated
   // Incluir relaciones si se solicita
   if (includeRelations) {
     dishesQuery = dishesQuery
-      .populate('category', 'name')
-      .populate('subcategory', 'name')
+      .populate('category', 'name nameSlug')
+      .populate('subcategory', 'name nameSlug')
       .populate('ingredients', 'name')
       .populate('allergens', 'name');
   }

@@ -1,9 +1,11 @@
 import { Schema, model, Types } from 'mongoose';
 import { ISubcategory } from '@/types/subcategory.types';
+import { generateSlug } from '@/utils/slug';
 
 const subcategorySchema = new Schema<ISubcategory>(
   {
     name: { type: String, required: true },
+    nameSlug: { type: String, required: true },
     category: {
       type: Schema.Types.ObjectId,
       ref: 'Category',
@@ -49,8 +51,19 @@ const subcategorySchema = new Schema<ISubcategory>(
   }
 );
 
+// Middleware para generar nameSlug automáticamente antes de guardar
+subcategorySchema.pre('save', function (next) {
+  // Solo generar slug si el name ha cambiado o es un documento nuevo
+  if (this.isModified('name') || this.isNew) {
+    this.nameSlug = generateSlug(this.name);
+  }
+  next();
+});
+
 // Índice compuesto para evitar subcategorías duplicadas dentro de la misma categoría
 subcategorySchema.index({ name: 1, category: 1 }, { unique: true });
+// Índice compuesto para slugs únicos dentro de la misma categoría
+subcategorySchema.index({ nameSlug: 1, category: 1 }, { unique: true });
 
 // Método para eliminación lógica
 subcategorySchema.methods.softDelete = function (deletedBy?: Types.ObjectId) {
