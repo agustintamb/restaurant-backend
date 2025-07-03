@@ -2,13 +2,14 @@ import { Types, Document } from 'mongoose';
 
 export interface IDish extends Document {
   name: string;
+  nameSlug: string;
   description: string;
   price: number;
-  image: string; // URL o path de la imagen
-  category: Types.ObjectId; // Referencia a la categoría
-  subcategory?: Types.ObjectId; // Referencia a la subcategoría (opcional)
-  ingredients: Types.ObjectId[]; // Referencias a ingredientes
-  allergens: Types.ObjectId[]; // Referencias a alérgenos
+  image: string;
+  category: Types.ObjectId;
+  subcategory?: Types.ObjectId;
+  ingredients: Types.ObjectId[];
+  allergens: Types.ObjectId[];
   createdBy?: Types.ObjectId;
   createdAt: Date;
   updatedBy?: Types.ObjectId;
@@ -21,6 +22,7 @@ export interface IDish extends Document {
 
 export interface ICreateDish {
   name: string;
+  nameSlug?: string;
   description: string;
   price: number;
   image?: string;
@@ -33,6 +35,7 @@ export interface ICreateDish {
 
 export interface IUpdateDish {
   name?: string;
+  nameSlug?: string;
   description?: string;
   price?: number;
   image?: string;
@@ -47,10 +50,10 @@ export interface GetDishesQuery {
   page?: string;
   limit?: string;
   search?: string;
-  categoryId?: string; // Para filtrar por categoría
-  subcategoryId?: string; // Para filtrar por subcategoría
+  categoryId?: string;
+  subcategoryId?: string;
   includeDeleted?: string;
-  includeRelations?: string; // Para incluir category, subcategory, ingredients, allergens
+  includeRelations?: string;
 }
 
 export interface PaginatedDishesResult {

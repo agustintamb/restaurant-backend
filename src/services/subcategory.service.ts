@@ -10,6 +10,7 @@ import {
 } from '@/types/subcategory.types';
 import { validateTokenService } from './auth.service';
 import { Dish } from '@/models/Dish.model';
+import { generateSlug } from '@/utils/slug';
 
 export const createSubcategoryService = async (
   subcategoryData: ICreateSubcategory,
@@ -35,8 +36,19 @@ export const createSubcategoryService = async (
     throw new Error('Ya existe una subcategoría con ese nombre en esta categoría');
   }
 
+  // Generar nameSlug si no se proporciona
+  const nameSlug = subcategoryData.nameSlug || generateSlug(subcategoryData.name);
+
+  // Verificar que el slug no exista en la misma categoría
+  const existingSlug = await Subcategory.findOne({
+    nameSlug,
+    category: subcategoryData.categoryId,
+  });
+  if (existingSlug) throw new Error('Ya existe una subcategoría con ese slug en esta categoría');
+
   const subcategory = new Subcategory({
     name: subcategoryData.name,
+    nameSlug,
     category: new Types.ObjectId(subcategoryData.categoryId),
     createdBy: new Types.ObjectId(currentUserId),
   });
@@ -100,6 +112,18 @@ export const updateSubcategoryService = async (
       throw new Error('Ya existe una subcategoría con ese nombre en esta categoría');
     }
     subcategory.name = updateData.name;
+  }
+
+  // Verificar slug si se proporciona explícitamente
+  if (updateData.nameSlug) {
+    const categoryId = updateData.categoryId || subcategory.category;
+    const existingSlug = await Subcategory.findOne({
+      nameSlug: updateData.nameSlug,
+      category: categoryId,
+      _id: { $ne: subcategoryId },
+    });
+    if (existingSlug) throw new Error('Ya existe una subcategoría con ese slug en esta categoría');
+    subcategory.nameSlug = updateData.nameSlug;
   }
 
   // Establecer automáticamente el usuario que modifica
@@ -186,7 +210,7 @@ export const getSubcategoryByIdService = async (subcategoryId: string): Promise<
   if (!Types.ObjectId.isValid(subcategoryId)) throw new Error('ID de subcategoría inválido');
 
   const subcategory = await Subcategory.findById(subcategoryId)
-    .populate('category', 'name')
+    .populate('category', 'name nameSlug')
     .populate('createdBy', 'firstName lastName username')
     .populate('updatedBy', 'firstName lastName username')
     .populate('deletedBy', 'firstName lastName username')
@@ -211,7 +235,10 @@ export const getSubcategoriesService = async (
   const filters: any = {};
 
   if (search) {
-    filters.name = { $regex: search, $options: 'i' };
+    filters.$or = [
+      { name: { $regex: search, $options: 'i' } },
+      { nameSlug: { $regex: search, $options: 'i' } },
+    ];
   }
 
   if (categoryId) {
@@ -238,7 +265,7 @@ export const getSubcategoriesService = async (
 
   // Incluir categoría si se solicita
   if (includeCategory) {
-    subcategoriesQuery = subcategoriesQuery.populate('category', 'name');
+    subcategoriesQuery = subcategoriesQuery.populate('category', 'name nameSlug');
   }
 
   // Ejecutar consultas
