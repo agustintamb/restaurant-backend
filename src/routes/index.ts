@@ -7,6 +7,7 @@ import categoryRoutes from './category.route';
 import subcategoryRoutes from './subcategory.route';
 import dishRoutes from './dish.route';
 import dashboardRoutes from './dashboard.route';
+import contactRoutes from './contact.route';
 
 const router = Router();
 
@@ -18,5 +19,6 @@ router.use('/categories', categoryRoutes);
 router.use('/subcategories', subcategoryRoutes);
 router.use('/dishes', dishRoutes);
 router.use('/dashboard', dashboardRoutes);
+router.use('/contacts', contactRoutes);
 
 export default router;

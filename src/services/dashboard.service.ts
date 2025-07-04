@@ -5,6 +5,7 @@ import { Ingredient } from '@/models/Ingredient.model';
 import { Allergen } from '@/models/Allergen.model';
 import { User } from '@/models/User.model';
 import { IDashboardStats } from '@/types/dashboard.types';
+import { Contact } from '@/models/Contact.model';
 
 export const getDashboardStatsService = async (): Promise<IDashboardStats> => {
   try {
@@ -32,6 +33,12 @@ export const getDashboardStatsService = async (): Promise<IDashboardStats> => {
       totalUsers,
       activeUsers,
       deletedUsers,
+
+      totalContacts,
+      activeContacts,
+      deletedContacts,
+      unreadContacts,
+      readContacts,
     ] = await Promise.all([
       // Platos
       Dish.countDocuments({}),
@@ -62,6 +69,13 @@ export const getDashboardStatsService = async (): Promise<IDashboardStats> => {
       User.countDocuments({}),
       User.countDocuments({ isDeleted: { $ne: true } }),
       User.countDocuments({ isDeleted: true }),
+
+      // Contactos
+      Contact.countDocuments({}),
+      Contact.countDocuments({ isDeleted: { $ne: true } }),
+      Contact.countDocuments({ isDeleted: true }),
+      Contact.countDocuments({ isDeleted: { $ne: true }, isRead: false }),
+      Contact.countDocuments({ isDeleted: { $ne: true }, isRead: true }),
     ]);
 
     return {
@@ -94,6 +108,13 @@ export const getDashboardStatsService = async (): Promise<IDashboardStats> => {
         total: totalUsers,
         active: activeUsers,
         deleted: deletedUsers,
+      },
+      contacts: {
+        total: totalContacts,
+        active: activeContacts,
+        deleted: deletedContacts,
+        unread: unreadContacts,
+        read: readContacts,
       },
     };
   } catch (error) {

@@ -1,5 +1,4 @@
 export interface IDashboardStats {
-  // Contadores simples por entidad
   dishes: {
     total: number;
     active: number;
@@ -30,22 +29,11 @@ export interface IDashboardStats {
     active: number;
     deleted: number;
   };
-}
-
-export interface ICategoryStats {
-  _id: string;
-  name: string;
-  dishCount: number;
-}
-
-export interface IPriceStats {
-  averagePrice: number;
-  minPrice: number;
-  maxPrice: number;
-  totalValue: number; // suma de todos los precios
-}
-
-export interface IDashboardStatsResponse {
-  message: string;
-  result: IDashboardStats;
+  contacts: {
+    total: number;
+    active: number;
+    deleted: number;
+    unread: number;
+    read: number;
+  };
 }
