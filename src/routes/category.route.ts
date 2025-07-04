@@ -12,6 +12,13 @@ import {
 
 const router = Router();
 
+/**
+ * @swagger
+ * tags:
+ *   name: Categorías
+ *   description: Gestión de categorías del sistema
+ */
+
 router.get('/', getCategories);
 
 // Todas las siguientes rutas requieren autenticación y rol admin

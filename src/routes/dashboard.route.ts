@@ -5,6 +5,13 @@ import { getDashboardStats } from '@/controllers/dashboard.controller';
 
 const router = Router();
 
+/**
+ * @swagger
+ * tags:
+ *   name: Dashboard
+ *   description: Gestión del panel de control del sistema
+ */
+
 // Todas las rutas de dashboard requieren autenticación y rol admin
 router.use(authenticateToken, requireAdmin);
 

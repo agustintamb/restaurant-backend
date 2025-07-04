@@ -11,6 +11,13 @@ import {
 } from '@/controllers/dish.controller';
 import { uploadMiddleware } from '@/utils/upload';
 
+/**
+ * @swagger
+ * tags:
+ *   name: Platos
+ *   description: Gestión de platos del sistema
+ */
+
 const router = Router();
 
 router.get('/', getDishes);
