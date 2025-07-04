@@ -67,7 +67,20 @@ CLOUDINARY_API_KEY=tu_api_key
 CLOUDINARY_API_SECRET=tu_api_secret
 ```
 
-### 4. Iniciar el servidor de desarrollo
+### 4. Inicializar la base de datos
+
+**IMPORTANTE**: Antes de iniciar el servidor por primera vez, inicializa la base de datos:
+
+```bash
+npm run db:init
+```
+
+Este comando crea un usuario administrador inicial con las credenciales:
+
+- **Email**: `admin@mail.com`
+- **Password**: `admin123`
+
+### 5. Iniciar el servidor de desarrollo
 
 ```bash
 npm run dev
@@ -125,6 +138,7 @@ npm run build        # Compilar TypeScript
 npm start           # Iniciar servidor de producción
 
 # Base de datos
+npm run db:init     # Inicializar base de datos con usuario admin root (REQUERIDO)
 npm run db:seed     # Poblar base de datos con datos de ejemplo
 npm run db:wipe     # Limpiar completamente la base de datos
 ```
