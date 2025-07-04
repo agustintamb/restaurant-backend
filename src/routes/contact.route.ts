@@ -12,6 +12,13 @@ import {
 
 const router = Router();
 
+/**
+ * @swagger
+ * tags:
+ *   name: Contactos
+ *   description: Gestión de mensajes de contacto del sistema
+ */
+
 // Ruta PÚBLICA para crear contacto (desde el formulario del sitio web)
 router.post('/', createContact);
 

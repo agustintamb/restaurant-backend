@@ -5,7 +5,7 @@ import { loginService } from '@/services/auth.service';
  * @swagger
  * /auth/login:
  *   post:
- *     summary: Iniciar sesión en el sistema
+ *     summary: Iniciar sesión
  *     tags: [Auth]
  *     requestBody:
  *       required: true
@@ -15,19 +15,23 @@ import { loginService } from '@/services/auth.service';
  *             $ref: '#/components/schemas/LoginRequest'
  *     responses:
  *       200:
- *         description: Login exitoso
+ *         description: Inicio de sesión exitoso
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/LoginResponseWrapper'
+ *               $ref: '#/components/schemas/LoginResponse'
  *       401:
- *         description: Credenciales inválidas
+ *         description: Credenciales inválidas o usuario eliminado
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/Error'
- *             example:
- *               error: "Credenciales inválidas"
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       400:
+ *         description: Error en la validación de datos
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  */
 export const login = async (req: Request, res: Response) => {
   try {

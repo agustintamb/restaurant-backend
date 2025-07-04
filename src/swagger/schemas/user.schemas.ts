@@ -173,7 +173,7 @@ export const userSchemas = {
         type: 'string',
         description: 'Nueva contraseña',
         minLength: 6,
-        example: 'newpassword123',
+        example: 'admin123',
       },
       firstName: {
         type: 'string',

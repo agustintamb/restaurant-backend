@@ -10,6 +10,13 @@ import {
   getAllergens,
 } from '@/controllers/allergen.controller';
 
+/**
+ * @swagger
+ * tags:
+ *   name: Alérgenos
+ *   description: Gestión de alérgenos del sistema
+ */
+
 const router = Router();
 
 // Todas las rutas de alérgenos requieren autenticación y rol admin

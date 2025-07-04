@@ -10,6 +10,13 @@ import {
   getSubcategories,
 } from '@/controllers/subcategory.controller';
 
+/**
+ * @swagger
+ * tags:
+ *   name: Subcategorías
+ *   description: Gestión de subcategorías del sistema
+ */
+
 const router = Router();
 
 // Todas las rutas de subcategorías requieren autenticación y rol admin

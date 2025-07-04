@@ -14,9 +14,10 @@ import {
 /**
  * @swagger
  * tags:
- *   name: Users
+ *   name: Usuarios
  *   description: Gestión de usuarios del sistema
  */
+
 const router = Router();
 // Todas las rutas de usuarios requieren autenticación y rol admin
 router.use(authenticateToken, requireAdmin);

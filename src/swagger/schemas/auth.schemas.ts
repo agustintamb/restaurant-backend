@@ -1,51 +1,26 @@
 export const authSchemas = {
+  // Schema para login request
   LoginRequest: {
     type: 'object',
     required: ['username', 'password'],
     properties: {
       username: {
         type: 'string',
-        description: 'Nombre de usuario (email)',
+        format: 'email',
+        description: 'Email del usuario',
         example: 'admin@mail.com',
       },
       password: {
         type: 'string',
         description: 'Contraseña del usuario',
+        minLength: 6,
         example: 'admin123',
       },
     },
   },
+
+  // Schema para login response
   LoginResponse: {
-    type: 'object',
-    properties: {
-      token: {
-        type: 'string',
-        description: 'Token JWT para autenticación',
-        example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
-      },
-      user: {
-        type: 'object',
-        properties: {
-          id: {
-            type: 'string',
-            description: 'ID del usuario',
-            example: '60d0fe4f5311236168a109ca',
-          },
-          username: {
-            type: 'string',
-            description: 'Nombre de usuario (email)',
-            example: 'admin@mail.com',
-          },
-          role: {
-            type: 'string',
-            description: 'Rol del usuario',
-            example: 'admin',
-          },
-        },
-      },
-    },
-  },
-  LoginResponseWrapper: {
     type: 'object',
     properties: {
       message: {
@@ -54,8 +29,38 @@ export const authSchemas = {
         example: 'Inicio de sesión exitoso',
       },
       result: {
-        $ref: '#/components/schemas/LoginResponse',
+        type: 'object',
+        properties: {
+          token: {
+            type: 'string',
+            description: 'Token JWT de autenticación',
+            example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+          },
+          user: {
+            type: 'object',
+            properties: {
+              id: {
+                type: 'string',
+                description: 'ID del usuario',
+                example: '64f1a2b3c4d5e6f7a8b9c0d1',
+              },
+              username: {
+                type: 'string',
+                description: 'Email del usuario',
+                example: 'admin@mail.com',
+              },
+              role: {
+                type: 'string',
+                description: 'Rol del usuario',
+                example: 'admin',
+              },
+            },
+            required: ['id', 'username', 'role'],
+          },
+        },
+        required: ['token', 'user'],
       },
     },
+    required: ['message', 'result'],
   },
 };

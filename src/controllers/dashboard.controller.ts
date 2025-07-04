@@ -9,21 +9,26 @@ import { getDashboardStatsService } from '@/services/dashboard.service';
  *     tags: [Dashboard]
  *     security:
  *       - bearerAuth: []
+ *     description: Obtiene estadísticas completas de todos los módulos del sistema incluyendo totales, activos, eliminados y datos específicos como contactos no leídos
  *     responses:
  *       200:
- *         description: Estadísticas obtenidas exitosamente
+ *         description: Estadísticas del dashboard obtenidas exitosamente
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/DashboardStatsResponse'
  *       400:
- *         description: Error en la solicitud
+ *         description: Error al obtener las estadísticas
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  *       401:
  *         description: No autorizado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  */
 export const getDashboardStats = async (req: Request, res: Response) => {
   try {
