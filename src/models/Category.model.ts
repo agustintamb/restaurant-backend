@@ -60,9 +60,6 @@ categorySchema.pre('save', function (next) {
   next();
 });
 
-// Índice para el slug
-categorySchema.index({ nameSlug: 1 });
-
 // Método para eliminación lógica
 categorySchema.methods.softDelete = function (deletedBy?: Types.ObjectId) {
   this.isDeleted = true;
