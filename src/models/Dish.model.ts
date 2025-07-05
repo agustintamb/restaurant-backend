@@ -82,7 +82,6 @@ dishSchema.pre('save', function (next) {
 
 // Índices para mejorar las consultas
 dishSchema.index({ name: 1 });
-dishSchema.index({ nameSlug: 1 });
 dishSchema.index({ category: 1 });
 dishSchema.index({ subcategory: 1 });
 dishSchema.index({ price: 1 });
